@@ -51,8 +51,8 @@
 #### Адреса коммутатора Spine 0
 IP|маска|Интерфейс|Назначение
 |---|---|---|---|
-10.2.0.0|32|Loopback 1|Lo underlay
-10.2.1.0|32|Loopback 2|Lo overlay
+10.2.0.0|32|Loopback 0|Lo underlay
+10.2.1.0|32|Loopback 1|Lo overlay
 10.2.2.1|31|Eth 1|p2p leaf 0
 10.2.2.3|31|Eth 2|p2p leaf 1
 10.2.2.5|31|Eth 3|p2p leaf 2
@@ -60,8 +60,8 @@ IP|маска|Интерфейс|Назначение
 #### Адреса коммутатора Spine 1
 IP|маска|Интерфейс|Назначение
 |---|---|---|---|
-10.2.4.0|32|Loopback 1|Lo underlay
-10.2.5.0|32|Loopback 2|Lo overlay
+10.2.4.0|32|Loopback 0|Lo underlay
+10.2.5.0|32|Loopback 1|Lo overlay
 10.2.6.1|31|Eth 1|p2p leaf 0
 10.2.6.3|31|Eth 2|p2p leaf 1
 10.2.6.5|31|Eth 3|p2p leaf 2
@@ -70,8 +70,8 @@ IP|маска|Интерфейс|Назначение
 #### Адреса коммутатора Leaf 0
 IP|маска|Интерфейс|Назначение
 |---|---|---|---|
-10.3.0.0|32|Loopback 1|Lo underlay
-10.3.1.0|32|Loopback 2|Lo overlay
+10.3.0.0|32|Loopback 0|Lo underlay
+10.3.1.0|32|Loopback 1|Lo overlay
 10.2.2.0|31|Eth 9|p2p spine 0
 10.2.6.0|31|Eth 10|p2p spine 1
 10.3.2.254|24|VLAN 10|App1
@@ -79,8 +79,8 @@ IP|маска|Интерфейс|Назначение
 #### Адреса коммутатора Leaf 1
 IP|маска|Интерфейс|Назначение
 |---|---|---|---|
-10.3.4.0|32|Loopback 1|Lo underlay
-10.3.5.0|32|Loopback 2|Lo overlay
+10.3.4.0|32|Loopback 0|Lo underlay
+10.3.5.0|32|Loopback 1|Lo overlay
 10.2.2.2|31|Eth 9|p2p spine 0
 10.2.6.2|31|Eth 10|p2p spine 1
 10.3.6.254|24|VLAN 10|App1
@@ -88,8 +88,8 @@ IP|маска|Интерфейс|Назначение
 #### Адреса коммутатора Leaf 2
 IP|маска|Интерфейс|Назначение
 |---|---|---|---|
-10.3.8.0|32|Loopback 1|Lo underlay
-10.3.9.0|32|Loopback 2|Lo overlay
+10.3.8.0|32|Loopback 0|Lo underlay
+10.3.9.0|32|Loopback 1|Lo overlay
 10.2.2.4|31|Eth 9|p2p spine 0
 10.2.6.4|31|Eth 10|p2p spine 1
 10.3.10.254|24|VLAN 10|App1
