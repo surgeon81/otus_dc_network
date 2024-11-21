@@ -157,3 +157,91 @@ interface Loopback100
    ip address 10.2.5.0/32
 !
 ```
+
+#### [Настройка Leaf_0](Leaf_0.cfg)
+
+```
+interface Ethernet1
+   description Client_1:Eth0
+   switchport access vlan 10
+!
+interface Ethernet9
+   description Spine_0:Eth1
+   no switchport
+   ip address 10.2.2.0/31
+!
+interface Ethernet10
+   description Spine_1:Eth1
+   no switchport
+   ip address 10.2.6.0/31
+!
+interface Loopback0
+   ip address 10.3.0.0/32
+!
+interface Loopback100
+   ip address 10.3.1.0/32
+!
+interface Vlan10
+   description App1
+   ip address 10.3.2.254/24
+   ```
+
+ #### [Настройка Leaf_1](Leaf_1.cfg)
+
+ ```
+ interface Ethernet1
+   description Client_2:Eth0
+   switchport access vlan 10
+!
+interface Ethernet9
+   description Spine_0:Eth2
+   no switchport
+   ip address 10.2.2.2/31
+!
+interface Ethernet10
+   description Spine_1:Eth2
+   no switchport
+   ip address 10.2.6.2/31
+!
+interface Loopback0
+   ip address 10.3.4.0/32
+!
+interface Loopback100
+   ip address 10.3.5.0/32
+!
+interface Vlan10
+   description App1
+   ip address 10.3.6.254/24
+```
+
+ #### [Настройка Leaf_2](Leaf_2.cfg)
+
+ ```
+ nterface Ethernet1
+   description Client_3:Eth0
+   switchport access vlan 10
+!
+interface Ethernet2
+   description Client_4:Eth0
+   switchport access vlan 10
+!
+interface Ethernet9
+   description Spine_0:Eth3
+   no switchport
+   ip address 10.2.2.4/31
+!
+interface Ethernet10
+   description Spine_1:Eth3
+   no switchport
+   ip address 10.2.6.4/31
+!
+interface Loopback0
+   ip address 10.3.8.0/32
+!
+interface Loopback100
+   ip address 10.3.9.0/32
+!
+interface Vlan10
+   description App1
+   ip address 10.3.10.254/24
+```
