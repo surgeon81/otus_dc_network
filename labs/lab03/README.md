@@ -100,7 +100,7 @@ IP|маска|Интерфейс|Назначение
 
 ### Подготовка стенда
 
-#### Настройка Spine_0
+#### [Настройка Spine_0](Spine_0.cfg)
 
 ```
 interface Ethernet1
@@ -124,7 +124,7 @@ interface Loopback0
 interface Loopback100
    ip address 10.2.1.0/32
 ```   
-#### Настройка Spine_1
+#### [Настройка Spine_1](Spine_1.cfg)
 
 ```
 interface Ethernet1
