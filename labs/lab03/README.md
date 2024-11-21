@@ -98,4 +98,29 @@ IP|маска|Интерфейс|Назначение
 10.3.10.254|24|VLAN 10|App1
 
 
+### Подготовка стенда
 
+#### Настройка Spine_0
+
+---
+interface Ethernet1
+   description Leaf_0:Eth9
+   no switchport
+   ip address 10.2.2.1/31
+!
+interface Ethernet2
+   description Leaf_1:Eth9
+   no switchport
+   ip address 10.2.2.3/31
+!
+interface Ethernet3
+   description Leaf_2:Eth9
+   no switchport
+   ip address 10.2.2.5/31
+!
+interface Loopback0
+   ip address 10.2.0.0/32
+!
+interface Loopback100
+   ip address 10.2.1.0/32
+---   
