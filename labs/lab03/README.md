@@ -124,3 +124,28 @@ interface Loopback0
 interface Loopback100
    ip address 10.2.1.0/32
 ```   
+#### Настройка Spine_1
+
+```
+interface Ethernet1
+   description Leaf_0:Eth10
+   no switchport
+   ip address 10.2.6.1/31
+!
+interface Ethernet2
+   description Leaf_1:Eth10
+   no switchport
+   ip address 10.2.6.3/31
+!
+interface Ethernet3
+   description Leaf_2:Eth10
+   no switchport
+   ip address 10.2.6.5/31
+!
+interface Loopback0
+   ip address 10.2.4.0/32
+!
+interface Loopback100
+   ip address 10.2.5.0/32
+!
+```
