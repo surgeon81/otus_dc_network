@@ -102,7 +102,7 @@ IP|маска|Интерфейс|Назначение
 
 #### Настройка Spine_0
 
----
+```
 interface Ethernet1
    description Leaf_0:Eth9
    no switchport
@@ -123,4 +123,4 @@ interface Loopback0
 !
 interface Loopback100
    ip address 10.2.1.0/32
----   
+```   
