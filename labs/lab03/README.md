@@ -5,7 +5,7 @@
 - Распределить адресное пространство для Underlay сети
 
 ### Топология сети
-![CLOS networkg.png](CLOS network.png)
+![CLOS_network.png](CLOS_network.png)
 
 ### Таблицы адресного пространства
 
