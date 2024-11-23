@@ -5,7 +5,7 @@
 
 
 ### Топология сети
-![CLOS_network.png](lab03/CLOS_network.png)
+![CLOS_network.png](OTUS_DC_NETWORK/labs/lab03/CLOS_network.png)
 
 ### Таблицы адресного пространства
 
