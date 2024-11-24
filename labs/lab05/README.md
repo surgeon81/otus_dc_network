@@ -335,3 +335,158 @@ router ospf 1
    area 10.3.8.0 range 10.3.8.0/22
    max-lsa 12000
 ```
+### Проверка работы протокола OSPF
+
+1. Проверим, поднялись ли соедские отношения на примере Spine_0
+````
+Spine_0#show ip ospf neighbor 
+Neighbor ID     Instance VRF      Pri State                  Dead Time   Address         Interface
+10.3.0.0        1        default  0   FULL                   00:00:33    10.2.2.0        Ethernet1
+10.3.4.0        1        default  0   FULL                   00:00:36    10.2.2.2        Ethernet2
+10.3.8.0        1        default  0   FULL                   00:00:30    10.2.2.4        Ethernet3
+Spine_0#
+````
+Как видим, соседство в состоянии FULL для всех 3х Leaf. Соседства со Spine_1 быть не должно, так как нет прямых линков до него
+
+2. Проверим OSPF анонсы
+````
+Spine_0# show ip ospf  database 
+
+            OSPF Router with ID(10.2.0.0) (Instance ID 1) (VRF default)
+
+
+                 Router Link States (Area 0.0.0.0)
+
+Link ID         ADV Router      Age         Seq#         Checksum Link count
+10.3.4.0        10.3.4.0        361         0x8000008c   0xb318   4
+10.2.4.0        10.2.4.0        389         0x80000091   0xf55a   6
+10.2.0.0        10.2.0.0        611         0x80000097   0x5614   6
+10.3.0.0        10.3.0.0        378         0x80000093   0xfcd7   4
+10.3.8.0        10.3.8.0        401         0x8000008c   0x5c5f   4
+
+                 Summary Link States (Area 0.0.0.0)
+
+Link ID         ADV Router      Age         Seq#         Checksum
+10.3.4.0        10.3.4.0        841         0x80000088   0x6e1e  
+10.3.0.0        10.3.0.0        1098        0x80000088   0xb6dd  
+10.3.8.0        10.3.8.0        581         0x80000088   0x265e  
+Spine_0#
+````
+Все Spine у нас находятся в Area 0 и являются Area Router. Как следствие, в базе OSPF мы видим LSA Type-1 (Router Link States) в Area 0 со всех 5ти коммутаторов. Так же видим LSA Type-3, отправляемые нашими ABR (Leaf).
+
+3. Взглянем на таблицу маршрутизации Spine_0
+````
+Spine_0# show ip route ospf
+
+VRF: default
+Codes: C - connected, S - static, K - kernel, 
+       O - OSPF, IA - OSPF inter area, E1 - OSPF external type 1,
+       E2 - OSPF external type 2, N1 - OSPF NSSA external type 1,
+       N2 - OSPF NSSA external type2, B - Other BGP Routes,
+       B I - iBGP, B E - eBGP, R - RIP, I L1 - IS-IS level 1,
+       I L2 - IS-IS level 2, O3 - OSPFv3, A B - BGP Aggregate,
+       A O - OSPF Summary, NG - Nexthop Group Static Route,
+       V - VXLAN Control Service, M - Martian,
+       DH - DHCP client installed default route,
+       DP - Dynamic Policy Route, L - VRF Leaked,
+       G  - gRIBI, RC - Route Cache Route
+
+ O        10.2.6.0/31 [110/20] via 10.2.2.0, Ethernet1
+ O        10.2.6.2/31 [110/20] via 10.2.2.2, Ethernet2
+ O        10.2.6.4/31 [110/20] via 10.2.2.4, Ethernet3
+ O IA     10.3.0.0/22 [110/20] via 10.2.2.0, Ethernet1
+ O IA     10.3.4.0/22 [110/20] via 10.2.2.2, Ethernet2
+ O IA     10.3.8.0/22 [110/20] via 10.2.2.4, Ethernet3
+````
+Мы видим p2p подсети Spine_1 а так же InterArea маршруты от всех трех Leaf
+
+4. Что же у нас на уровне Leaf на примере Leaf_0?
+````
+Leaf_0#show ip ospf database 
+
+            OSPF Router with ID(10.3.0.0) (Instance ID 1) (VRF default)
+
+
+                 Router Link States (Area 0.0.0.0)
+
+Link ID         ADV Router      Age         Seq#         Checksum Link count
+10.2.4.0        10.2.4.0        1119        0x80000091   0xf55a   6
+10.2.0.0        10.2.0.0        1342        0x80000097   0x5614   6
+10.3.4.0        10.3.4.0        1092        0x8000008c   0xb318   4
+10.3.8.0        10.3.8.0        1132        0x8000008c   0x5c5f   4
+10.3.0.0        10.3.0.0        1108        0x80000093   0xfcd7   4
+
+                 Summary Link States (Area 0.0.0.0)
+
+Link ID         ADV Router      Age         Seq#         Checksum
+10.3.4.0        10.3.4.0        1572        0x80000088   0x6e1e  
+10.3.8.0        10.3.8.0        1312        0x80000088   0x265e  
+10.3.0.0        10.3.0.0        1828        0x80000088   0xb6dd  
+
+                 Router Link States (Area 10.3.0.0)
+
+Link ID         ADV Router      Age         Seq#         Checksum Link count
+10.3.0.0        10.3.0.0        328         0x80000089   0x40de   3
+
+                 Summary Link States (Area 10.3.0.0)
+
+Link ID         ADV Router      Age         Seq#         Checksum
+0.0.0.0         10.3.0.0        328         0x80000088   0x1286  
+````
+Тут уже видим две базы OSPF: для Area 0 и для своей зоны.
+
+5. Маршруты на уровне Leaf.
+````
+Leaf_0# show ip route ospf
+
+VRF: default
+Codes: C - connected, S - static, K - kernel, 
+       O - OSPF, IA - OSPF inter area, E1 - OSPF external type 1,
+       E2 - OSPF external type 2, N1 - OSPF NSSA external type 1,
+       N2 - OSPF NSSA external type2, B - Other BGP Routes,
+       B I - iBGP, B E - eBGP, R - RIP, I L1 - IS-IS level 1,
+       I L2 - IS-IS level 2, O3 - OSPFv3, A B - BGP Aggregate,
+       A O - OSPF Summary, NG - Nexthop Group Static Route,
+       V - VXLAN Control Service, M - Martian,
+       DH - DHCP client installed default route,
+       DP - Dynamic Policy Route, L - VRF Leaked,
+       G  - gRIBI, RC - Route Cache Route
+
+ O        10.2.2.2/31 [110/20] via 10.2.2.1, Ethernet9
+ O        10.2.2.4/31 [110/20] via 10.2.2.1, Ethernet9
+ O        10.2.6.2/31 [110/20] via 10.2.6.1, Ethernet10
+ O        10.2.6.4/31 [110/20] via 10.2.6.1, Ethernet10
+ O IA     10.3.4.0/22 [110/30] via 10.2.2.1, Ethernet9
+                               via 10.2.6.1, Ethernet10
+ O IA     10.3.8.0/22 [110/30] via 10.2.2.1, Ethernet9
+                               via 10.2.6.1, Ethernet10
+
+````
+Тут уже видим, что имеется два одинаковых маршрута до подсетей остальных Leaf, что позволит при включении ecmp использовать их одновременно.
+
+6. Ну, и проверим связность клиентов на примере Client_1
+````
+VPCS> ping 10.3.6.1
+
+84 bytes from 10.3.6.1 icmp_seq=1 ttl=61 time=83.241 ms
+84 bytes from 10.3.6.1 icmp_seq=2 ttl=61 time=69.597 ms
+84 bytes from 10.3.6.1 icmp_seq=3 ttl=61 time=49.385 ms
+84 bytes from 10.3.6.1 icmp_seq=4 ttl=61 time=65.990 ms
+^C
+VPCS> ping 10.3.10.1
+
+84 bytes from 10.3.10.1 icmp_seq=1 ttl=61 time=109.887 ms
+84 bytes from 10.3.10.1 icmp_seq=2 ttl=61 time=40.014 ms
+84 bytes from 10.3.10.1 icmp_seq=3 ttl=61 time=41.454 ms
+84 bytes from 10.3.10.1 icmp_seq=4 ttl=61 time=43.891 ms
+^C
+VPCS> ping 10.3.10.2 
+
+84 bytes from 10.3.10.2 icmp_seq=1 ttl=61 time=61.761 ms
+84 bytes from 10.3.10.2 icmp_seq=2 ttl=61 time=44.030 ms
+84 bytes from 10.3.10.2 icmp_seq=3 ttl=61 time=40.082 ms
+84 bytes from 10.3.10.2 icmp_seq=4 ttl=61 time=46.095 ms
+84 bytes from 10.3.10.2 icmp_seq=5 ttl=61 time=45.455 ms
+
+VPCS> 
+````
