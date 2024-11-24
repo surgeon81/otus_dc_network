@@ -87,22 +87,46 @@ interface Ethernet1
    description Leaf_0:Eth9
    no switchport
    ip address 10.2.2.1/31
+   ip ospf network point-to-point
+   ip ospf authentication message-digest
+   ip ospf authentication-key 7 7O4CGaiAcR0=
+   ip ospf area 0.0.0.0
 !
 interface Ethernet2
    description Leaf_1:Eth9
    no switchport
    ip address 10.2.2.3/31
+   ip ospf network point-to-point
+   ip ospf authentication message-digest
+   ip ospf authentication-key 7 x1W70kMMQaQ=
+   ip ospf area 0.0.0.0
 !
 interface Ethernet3
    description Leaf_2:Eth9
    no switchport
    ip address 10.2.2.5/31
+   ip ospf network point-to-point
+   ip ospf authentication message-digest
+   ip ospf authentication-key 7 x1W70kMMQaQ=
+   ip ospf area 0.0.0.0
 !
 interface Loopback0
    ip address 10.2.0.0/32
 !
 interface Loopback100
    ip address 10.2.1.0/32
+!
+ip routing
+!
+router ospf 1
+   router-id 10.2.0.0
+   passive-interface default
+   no passive-interface Ethernet1
+   no passive-interface Ethernet2
+   no passive-interface Ethernet3
+   max-lsa 12000
+!
+
 ```   
 #### [Настройка Spine_1](Spine_1.cfg)
 
@@ -111,16 +135,28 @@ interface Ethernet1
    description Leaf_0:Eth10
    no switchport
    ip address 10.2.6.1/31
+   ip ospf network point-to-point
+   ip ospf authentication message-digest
+   ip ospf authentication-key 7 7O4CGaiAcR0=
+   ip ospf area 0.0.0.0
 !
 interface Ethernet2
    description Leaf_1:Eth10
    no switchport
    ip address 10.2.6.3/31
+   ip ospf network point-to-point
+   ip ospf authentication message-digest
+   ip ospf authentication-key 7 x1W70kMMQaQ=
+   ip ospf area 0.0.0.0
 !
 interface Ethernet3
    description Leaf_2:Eth10
    no switchport
    ip address 10.2.6.5/31
+   ip ospf network point-to-point
+   ip ospf authentication message-digest
+   ip ospf authentication-key 7 x1W70kMMQaQ=
+   ip ospf area 0.0.0.0
 !
 interface Loopback0
    ip address 10.2.4.0/32
@@ -128,11 +164,23 @@ interface Loopback0
 interface Loopback100
    ip address 10.2.5.0/32
 !
+ip routing
+!
+router ospf 1
+   router-id 10.2.4.0
+   passive-interface default
+   no passive-interface Ethernet1
+   no passive-interface Ethernet2
+   no passive-interface Ethernet3
+   max-lsa 12000
 ```
 
 #### [Настройка Leaf_0](Leaf_0.cfg)
 
 ```
+vlan 10
+   name App1
+!
 interface Ethernet1
    description Client_1:Eth0
    switchport access vlan 10
@@ -141,27 +189,51 @@ interface Ethernet9
    description Spine_0:Eth1
    no switchport
    ip address 10.2.2.0/31
+   ip ospf network point-to-point
+   ip ospf authentication message-digest
+   ip ospf authentication-key 7 RdTlHg2Ijiw=
+   ip ospf area 0.0.0.0
 !
 interface Ethernet10
    description Spine_1:Eth1
    no switchport
    ip address 10.2.6.0/31
+   ip ospf network point-to-point
+   ip ospf authentication message-digest
+   ip ospf authentication-key 7 TSPxiC76NC0=
+   ip ospf area 0.0.0.0
 !
 interface Loopback0
    ip address 10.3.0.0/32
 !
 interface Loopback100
    ip address 10.3.1.0/32
+   ip ospf area 10.3.0.0
 !
 interface Vlan10
    description App1
    ip address 10.3.2.254/24
+   ip ospf area 10.3.0.0
+!
+ip routing
+!
+router ospf 1
+   router-id 10.3.0.0
+   passive-interface default
+   no passive-interface Ethernet9
+   no passive-interface Ethernet10
+   area 10.3.0.0 nssa no-summary
+   area 10.3.0.0 range 10.3.0.0/22
+   max-lsa 12000
    ```
 
  #### [Настройка Leaf_1](Leaf_1.cfg)
 
  ```
- interface Ethernet1
+ vlan 10
+   name App1
+!
+interface Ethernet1
    description Client_2:Eth0
    switchport access vlan 10
 !
@@ -169,27 +241,52 @@ interface Ethernet9
    description Spine_0:Eth2
    no switchport
    ip address 10.2.2.2/31
+   ip ospf network point-to-point
+   ip ospf authentication message-digest
+   ip ospf authentication-key 7 RdTlHg2Ijiw=
+   ip ospf area 0.0.0.0
 !
 interface Ethernet10
    description Spine_1:Eth2
    no switchport
    ip address 10.2.6.2/31
+   ip ospf network point-to-point
+   ip ospf authentication message-digest
+   ip ospf authentication-key 7 TSPxiC76NC0=
+   ip ospf area 0.0.0.0
 !
 interface Loopback0
    ip address 10.3.4.0/32
 !
 interface Loopback100
    ip address 10.3.5.0/32
+   ip ospf area 10.3.4.0
 !
 interface Vlan10
    description App1
    ip address 10.3.6.254/24
+   ip ospf area 10.3.4.0
+!
+ip routing
+!
+router ospf 1
+   router-id 10.3.4.0
+   passive-interface default
+   no passive-interface Ethernet9
+   no passive-interface Ethernet10
+   area 10.3.4.0 nssa no-summary
+   area 10.3.4.0 range 10.3.4.0/22
+   max-lsa 12000
+!
 ```
 
  #### [Настройка Leaf_2](Leaf_2.cfg)
 
  ```
- nterface Ethernet1
+ vlan 10
+   name App1
+!
+interface Ethernet1
    description Client_3:Eth0
    switchport access vlan 10
 !
@@ -201,19 +298,40 @@ interface Ethernet9
    description Spine_0:Eth3
    no switchport
    ip address 10.2.2.4/31
+   ip ospf network point-to-point
+   ip ospf authentication message-digest
+   ip ospf authentication-key 7 RdTlHg2Ijiw=
+   ip ospf area 0.0.0.0
 !
 interface Ethernet10
    description Spine_1:Eth3
    no switchport
    ip address 10.2.6.4/31
+   ip ospf network point-to-point
+   ip ospf authentication message-digest
+   ip ospf authentication-key 7 TSPxiC76NC0=
+   ip ospf area 0.0.0.0
 !
 interface Loopback0
    ip address 10.3.8.0/32
 !
 interface Loopback100
    ip address 10.3.9.0/32
+   ip ospf area 10.3.8.0
 !
 interface Vlan10
    description App1
    ip address 10.3.10.254/24
+   ip ospf area 10.3.8.0
+!
+ip routing
+!
+router ospf 1
+   router-id 10.3.8.0
+   passive-interface default
+   no passive-interface Ethernet9
+   no passive-interface Ethernet10
+   area 10.3.8.0 nssa no-summary
+   area 10.3.8.0 range 10.3.8.0/22
+   max-lsa 12000
 ```
