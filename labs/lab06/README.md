@@ -11,7 +11,7 @@
 1. Все интерфейсы комутаторов всех уровней Spine находятся в Area 9999
 2. Вск коммутаторы уровней Spine относятся к ISIS L2 коммутаторам
 2. Все коммутаторы уровня Leaf являются L1/L2
-3. Все коммутаторы уровня Leaf пренадлежат своей Area
+3. Все коммутаторы уровня Leaf пренадлежат своей Area, номер которой равен последнему октету адреса интерфейса Looback0
 4. ISIS Router NET коммутаторов всех уровней является видоизмененный IP адрес его интерфейса Loopback0
 6. Loopback0 интерфейсы не анонсируются на всех уровнях
 7. Интерфейсы >= Loopback100 анонсируются только на уровне Leaf
@@ -24,7 +24,7 @@
 #### Адреса коммутатора Spine 0
 IP|маска|Интерфейс|Назначение
 |---|---|---|---|
-10.2.0.0|32|Loopback 0|RID
+10.2.0.0|32|Loopback 0|NET
 10.2.1.0|32|Loopback 100|Reserved
 10.2.2.1|31|Eth 1|p2p leaf 0
 10.2.2.3|31|Eth 2|p2p leaf 1
@@ -33,7 +33,7 @@ IP|маска|Интерфейс|Назначение
 #### Адреса коммутатора Spine 1
 IP|маска|Интерфейс|Назначение
 |---|---|---|---|
-10.2.4.0|32|Loopback 0|RID
+10.2.4.0|32|Loopback 0|NET
 10.2.5.0|32|Loopback 100|Reserved
 10.2.6.1|31|Eth 1|p2p leaf 0
 10.2.6.3|31|Eth 2|p2p leaf 1
@@ -43,7 +43,7 @@ IP|маска|Интерфейс|Назначение
 #### Адреса коммутатора Leaf 0
 IP|маска|Интерфейс|OSPF Area|Назначение
 |---|---|---|---|---|
-10.3.0.0|32|Loopback 0|10.3.0.0|RID, Area
+10.3.0.0|32|Loopback 0|10.3.0.0|NET
 10.3.1.0|32|Loopback 100|10.3.0.0|Lo overlay
 10.3.2.254|24|VLAN 10|10.3.0.0|App1
 10.2.2.0|31|Eth 9|0.0.0.0|p2p spine 0
@@ -52,7 +52,7 @@ IP|маска|Интерфейс|OSPF Area|Назначение
 #### Адреса коммутатора Leaf 1
 IP|маска|Интерфейс|OSPF Area|Назначение
 |---|---|---|---|---|
-10.3.4.0|32|Loopback 0|10.3.4.0|RID, Area
+10.3.4.0|32|Loopback 0|10.3.4.0|NET
 10.3.5.0|32|Loopback 100|10.3.4.0|Lo overlay
 10.3.6.254|24|VLAN 10|10.3.4.0|App1
 10.2.2.2|31|Eth 9|0.0.0.0|p2p spine 0
@@ -61,7 +61,7 @@ IP|маска|Интерфейс|OSPF Area|Назначение
 #### Адреса коммутатора Leaf 2
 IP|маска|Интерфейс|OSPF Area|Назначение
 |---|---|---|---|---|
-10.3.8.0|32|Loopback 0|10.3.8.0|RID, Area
+10.3.8.0|32|Loopback 0|10.3.8.0|NET
 10.3.9.0|32|Loopback 100|10.3.8.0|Lo overlay
 10.3.10.254|24|VLAN 10|10.3.8.0|App1
 10.2.2.4|31|Eth 9|0.0.0.0|p2p spine 0
@@ -85,28 +85,28 @@ interface Ethernet1
    description Leaf_0:Eth9
    no switchport
    ip address 10.2.2.1/31
-   ip ospf network point-to-point
-   ip ospf authentication message-digest
-   ip ospf authentication-key 7 7O4CGaiAcR0=
-   ip ospf area 0.0.0.0
+   isis enable 1
+   isis network point-to-point
+   isis authentication mode md5
+   isis authentication key 7 btRsZaMBerY=
 !
 interface Ethernet2
    description Leaf_1:Eth9
    no switchport
    ip address 10.2.2.3/31
-   ip ospf network point-to-point
-   ip ospf authentication message-digest
-   ip ospf authentication-key 7 x1W70kMMQaQ=
-   ip ospf area 0.0.0.0
+   isis enable 1
+   isis network point-to-point
+   isis authentication mode md5
+   isis authentication key 7 btRsZaMBerY=
 !
 interface Ethernet3
    description Leaf_2:Eth9
    no switchport
    ip address 10.2.2.5/31
-   ip ospf network point-to-point
-   ip ospf authentication message-digest
-   ip ospf authentication-key 7 x1W70kMMQaQ=
-   ip ospf area 0.0.0.0
+   isis enable 1
+   isis network point-to-point
+   isis authentication mode md5
+   isis authentication key 7 btRsZaMBerY=
 !
 interface Loopback0
    ip address 10.2.0.0/32
@@ -116,13 +116,14 @@ interface Loopback100
 !
 ip routing
 !
-router ospf 1
-   router-id 10.2.0.0
-   passive-interface default
-   no passive-interface Ethernet1
-   no passive-interface Ethernet2
-   no passive-interface Ethernet3
-   max-lsa 12000
+router isis 1
+   net 49.9999.0100.0200.0000.00
+   is-type level-2
+   advertise passive-only
+   authentication mode md5
+   authentication key 7 btRsZaMBerY=
+   !
+   address-family ipv4 unicast
 !
 
 ```   
@@ -133,28 +134,28 @@ interface Ethernet1
    description Leaf_0:Eth10
    no switchport
    ip address 10.2.6.1/31
-   ip ospf network point-to-point
-   ip ospf authentication message-digest
-   ip ospf authentication-key 7 7O4CGaiAcR0=
-   ip ospf area 0.0.0.0
+   isis enable 1
+   isis network point-to-point
+   isis authentication mode md5
+   isis authentication key 7 btRsZaMBerY=
 !
 interface Ethernet2
    description Leaf_1:Eth10
    no switchport
    ip address 10.2.6.3/31
-   ip ospf network point-to-point
-   ip ospf authentication message-digest
-   ip ospf authentication-key 7 x1W70kMMQaQ=
-   ip ospf area 0.0.0.0
+   isis enable 1
+   isis network point-to-point
+   isis authentication mode md5
+   isis authentication key 7 btRsZaMBerY=
 !
 interface Ethernet3
    description Leaf_2:Eth10
    no switchport
    ip address 10.2.6.5/31
-   ip ospf network point-to-point
-   ip ospf authentication message-digest
-   ip ospf authentication-key 7 x1W70kMMQaQ=
-   ip ospf area 0.0.0.0
+   isis enable 1
+   isis network point-to-point
+   isis authentication mode md5
+   isis authentication key 7 btRsZaMBerY=
 !
 interface Loopback0
    ip address 10.2.4.0/32
@@ -164,13 +165,15 @@ interface Loopback100
 !
 ip routing
 !
-router ospf 1
-   router-id 10.2.4.0
-   passive-interface default
-   no passive-interface Ethernet1
-   no passive-interface Ethernet2
-   no passive-interface Ethernet3
-   max-lsa 12000
+router isis 1
+   net 49.9999.0100.0200.4000.00
+   is-type level-2
+   advertise passive-only
+   authentication mode md5
+   authentication key 7 btRsZaMBerY=
+   !
+   address-family ipv4 unicast
+!
 ```
 
 #### [Настройка Leaf_0](Leaf_0.cfg)
@@ -187,42 +190,46 @@ interface Ethernet9
    description Spine_0:Eth1
    no switchport
    ip address 10.2.2.0/31
-   ip ospf network point-to-point
-   ip ospf authentication message-digest
-   ip ospf authentication-key 7 RdTlHg2Ijiw=
-   ip ospf area 0.0.0.0
+   isis enable 1
+   isis network point-to-point
+   isis authentication mode md5
+   isis authentication key 7 btRsZaMBerY=
 !
 interface Ethernet10
    description Spine_1:Eth1
    no switchport
    ip address 10.2.6.0/31
-   ip ospf network point-to-point
-   ip ospf authentication message-digest
-   ip ospf authentication-key 7 TSPxiC76NC0=
-   ip ospf area 0.0.0.0
+   isis enable 1
+   isis network point-to-point
+   isis authentication mode md5
+   isis authentication key 7 btRsZaMBerY=
 !
 interface Loopback0
    ip address 10.3.0.0/32
 !
 interface Loopback100
    ip address 10.3.1.0/32
-   ip ospf area 10.3.0.0
+   isis enable 1
+   isis passive
+!
+interface Management1
 !
 interface Vlan10
    description App1
    ip address 10.3.2.254/24
-   ip ospf area 10.3.0.0
+   isis enable 1
+   isis passive
 !
 ip routing
 !
-router ospf 1
-   router-id 10.3.0.0
-   passive-interface default
-   no passive-interface Ethernet9
-   no passive-interface Ethernet10
-   area 10.3.0.0 nssa no-summary
-   area 10.3.0.0 range 10.3.0.0/22
-   max-lsa 12000
+router isis 1
+   net 49.0000.0100.0300.0000.00
+   advertise passive-only
+   authentication mode md5
+   authentication key 7 btRsZaMBerY=
+   !
+   address-family ipv4 unicast
+!
    ```
 
  #### [Настройка Leaf_1](Leaf_1.cfg)
@@ -239,42 +246,46 @@ interface Ethernet9
    description Spine_0:Eth2
    no switchport
    ip address 10.2.2.2/31
-   ip ospf network point-to-point
-   ip ospf authentication message-digest
-   ip ospf authentication-key 7 RdTlHg2Ijiw=
-   ip ospf area 0.0.0.0
+   isis enable 1
+   isis network point-to-point
+   isis authentication mode md5
+   isis authentication key 7 btRsZaMBerY=
 !
 interface Ethernet10
    description Spine_1:Eth2
    no switchport
    ip address 10.2.6.2/31
-   ip ospf network point-to-point
-   ip ospf authentication message-digest
-   ip ospf authentication-key 7 TSPxiC76NC0=
-   ip ospf area 0.0.0.0
+   isis enable 1
+   isis network point-to-point
+   isis authentication mode md5
+   isis authentication key 7 btRsZaMBerY=
 !
 interface Loopback0
    ip address 10.3.4.0/32
 !
 interface Loopback100
    ip address 10.3.5.0/32
-   ip ospf area 10.3.4.0
+   isis enable 1
+   isis passive
+!
+interface Management1
 !
 interface Vlan10
    description App1
    ip address 10.3.6.254/24
-   ip ospf area 10.3.4.0
+   isis enable 1
+   isis passive
 !
 ip routing
 !
-router ospf 1
-   router-id 10.3.4.0
-   passive-interface default
-   no passive-interface Ethernet9
-   no passive-interface Ethernet10
-   area 10.3.4.0 nssa no-summary
-   area 10.3.4.0 range 10.3.4.0/22
-   max-lsa 12000
+router isis 1
+   net 49.0001.0100.0300.4000.00
+   router-id ipv4 10.3.4.0
+   advertise passive-only
+   authentication mode md5
+   authentication key 7 btRsZaMBerY=
+   !
+   address-family ipv4 unicast
 !
 ```
 
@@ -296,44 +307,48 @@ interface Ethernet9
    description Spine_0:Eth3
    no switchport
    ip address 10.2.2.4/31
-   ip ospf network point-to-point
-   ip ospf authentication message-digest
-   ip ospf authentication-key 7 RdTlHg2Ijiw=
-   ip ospf area 0.0.0.0
+   isis enable 1
+   isis network point-to-point
+   isis authentication mode md5
+   isis authentication key 7 btRsZaMBerY=
 !
 interface Ethernet10
    description Spine_1:Eth3
    no switchport
    ip address 10.2.6.4/31
-   ip ospf network point-to-point
-   ip ospf authentication message-digest
-   ip ospf authentication-key 7 TSPxiC76NC0=
-   ip ospf area 0.0.0.0
+   isis enable 1
+   isis network point-to-point
+   isis authentication mode md5
+   isis authentication key 7 btRsZaMBerY=
 !
 interface Loopback0
    ip address 10.3.8.0/32
 !
 interface Loopback100
    ip address 10.3.9.0/32
-   ip ospf area 10.3.8.0
+   isis enable 1
+   isis passive
+!
+interface Management1
 !
 interface Vlan10
    description App1
    ip address 10.3.10.254/24
-   ip ospf area 10.3.8.0
+   isis enable 1
+   isis passive
 !
 ip routing
 !
-router ospf 1
-   router-id 10.3.8.0
-   passive-interface default
-   no passive-interface Ethernet9
-   no passive-interface Ethernet10
-   area 10.3.8.0 nssa no-summary
-   area 10.3.8.0 range 10.3.8.0/22
-   max-lsa 12000
+router isis 1
+   net 49.0002.0100.0300.8000.00
+   advertise passive-only
+   authentication mode md5
+   authentication key 7 btRsZaMBerY=
+   !
+   address-family ipv4 unicast
+!
 ```
-### Проверка работы протокола OSPF
+### Проверка работы протокола ISIS
 
 1. Проверим, поднялись ли соедские отношения на примере Spine_0
 ````
