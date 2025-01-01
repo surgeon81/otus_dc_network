@@ -132,28 +132,16 @@ interface Ethernet1
    description Leaf_0:Eth10
    no switchport
    ip address 10.2.6.1/31
-   isis enable 1
-   isis network point-to-point
-   isis authentication mode md5
-   isis authentication key 7 btRsZaMBerY=
 !
 interface Ethernet2
    description Leaf_1:Eth10
    no switchport
    ip address 10.2.6.3/31
-   isis enable 1
-   isis network point-to-point
-   isis authentication mode md5
-   isis authentication key 7 btRsZaMBerY=
 !
 interface Ethernet3
    description Leaf_2:Eth10
    no switchport
    ip address 10.2.6.5/31
-   isis enable 1
-   isis network point-to-point
-   isis authentication mode md5
-   isis authentication key 7 btRsZaMBerY=
 !
 interface Loopback0
    ip address 10.2.4.0/32
@@ -163,14 +151,26 @@ interface Loopback100
 !
 ip routing
 !
-router isis 1
-   net 49.9999.0100.0200.4000.00
-   is-type level-2
-   advertise passive-only
-   authentication mode md5
-   authentication key 7 btRsZaMBerY=
-   !
-   address-family ipv4 unicast
+ip route 10.2.6.0/24 Null0
+!
+router bgp 64512
+   router-id 10.2.4.0
+   neighbor 10.2.6.0 remote-as 64512
+   neighbor 10.2.6.0 bfd
+   neighbor 10.2.6.0 description Leaf0
+   neighbor 10.2.6.0 route-reflector-client
+   neighbor 10.2.6.0 password 7 E3IUT8qCXKI=
+   neighbor 10.2.6.2 remote-as 64512
+   neighbor 10.2.6.2 bfd
+   neighbor 10.2.6.2 description Leaf1
+   neighbor 10.2.6.2 route-reflector-client
+   neighbor 10.2.6.2 password 7 chfxYS8rP44=
+   neighbor 10.2.6.4 remote-as 64512
+   neighbor 10.2.6.4 bfd
+   neighbor 10.2.6.4 description Leaf2
+   neighbor 10.2.6.4 route-reflector-client
+   neighbor 10.2.6.4 password 7 QTE2ovjU2pY=
+   network 10.2.6.0/24
 !
 ```
 
