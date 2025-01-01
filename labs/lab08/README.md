@@ -81,28 +81,16 @@ interface Ethernet1
    description Leaf_0:Eth9
    no switchport
    ip address 10.2.2.1/31
-   isis enable 1
-   isis network point-to-point
-   isis authentication mode md5
-   isis authentication key 7 btRsZaMBerY=
 !
 interface Ethernet2
    description Leaf_1:Eth9
    no switchport
    ip address 10.2.2.3/31
-   isis enable 1
-   isis network point-to-point
-   isis authentication mode md5
-   isis authentication key 7 btRsZaMBerY=
 !
 interface Ethernet3
    description Leaf_2:Eth9
    no switchport
    ip address 10.2.2.5/31
-   isis enable 1
-   isis network point-to-point
-   isis authentication mode md5
-   isis authentication key 7 btRsZaMBerY=
 !
 interface Loopback0
    ip address 10.2.0.0/32
@@ -112,15 +100,29 @@ interface Loopback100
 !
 ip routing
 !
-router isis 1
-   net 49.9999.0100.0200.0000.00
-   is-type level-2
-   advertise passive-only
-   authentication mode md5
-   authentication key 7 btRsZaMBerY=
-   !
-   address-family ipv4 unicast
+ip route 10.2.2.0/24 Null0
 !
+router bgp 64512
+   router-id 10.2.0.0
+   maximum-paths 2
+   neighbor 10.2.2.0 remote-as 64512
+   neighbor 10.2.2.0 bfd
+   neighbor 10.2.2.0 description Leaf0
+   neighbor 10.2.2.0 route-reflector-client
+   neighbor 10.2.2.0 password 7 XWFo5YHkqfI=
+   neighbor 10.2.2.2 remote-as 64512
+   neighbor 10.2.2.2 bfd
+   neighbor 10.2.2.2 description Leaf1
+   neighbor 10.2.2.2 route-reflector-client
+   neighbor 10.2.2.2 password 7 CDMhtdkY700=
+   neighbor 10.2.2.4 remote-as 64512
+   neighbor 10.2.2.4 bfd
+   neighbor 10.2.2.4 description Leaf2
+   neighbor 10.2.2.4 route-reflector-client
+   neighbor 10.2.2.4 password 7 8jY+bQI+EZc=
+   network 10.2.2.0/24
+!
+
 
 ```   
 #### [Настройка Spine_1](Spine_1.cfg)
