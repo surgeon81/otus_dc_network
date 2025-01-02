@@ -14,6 +14,7 @@
 7. Интерфейсы >= Loopback100 анонсируются только на уровне Leaf
 8. Анонс >=Loopback100 интефейсов на уровнях Spine включается только в случаях терминации VxLAN туннеля на данном уровне
 9. На всех p2p линках с подсетью /31 используется функция "netwok type point-to-point"
+10. Для всех анонсируемых суммированных маршрутов добавляем в таблицу маршрутизации через интерфейс Null0
 
 ### Адреса устройств
 
@@ -177,19 +178,158 @@ router bgp 64512
 #### [Настройка Leaf_0](Leaf_0.cfg)
 
 ```
-
+vlan 10
+   name App1
+!
+interface Ethernet1
+   description Client_1:Eth0
+   switchport access vlan 10
+!
+interface Ethernet9
+   description Spine_0:Eth1
+   no switchport
+   ip address 10.2.2.0/31
+!
+interface Ethernet10
+   description Spine_1:Eth1
+   no switchport
+   ip address 10.2.6.0/31
+!
+interface Loopback0
+   ip address 10.3.0.0/32
+!
+interface Loopback100
+   ip address 10.3.1.0/32
+!
+!
+interface Vlan10
+   description App1
+   ip address 10.3.2.254/24
+!
+ip routing
+!
+ip route 10.3.1.0/24 Null0
+ip route 10.3.2.0/24 Null0
+!
+router bgp 64512
+   router-id 10.3.0.0
+   maximum-paths 2
+   neighbor 10.2.2.1 remote-as 64512
+   neighbor 10.2.2.1 bfd
+   neighbor 10.2.2.1 description Spine0
+   neighbor 10.2.2.1 password 7 XWFo5YHkqfI=
+   neighbor 10.2.6.1 remote-as 64512
+   neighbor 10.2.6.1 bfd
+   neighbor 10.2.6.1 description Spine1
+   neighbor 10.2.6.1 password 7 E3IUT8qCXKI=
+   network 10.3.1.0/24
+   network 10.3.2.0/24
+!
 ```
 
  #### [Настройка Leaf_1](Leaf_1.cfg)
 
 ```
-
+vlan 10
+   name App1
+!
+interface Ethernet1
+   description Client_2:Eth0
+   switchport access vlan 10
+!
+interface Ethernet9
+   description Spine_0:Eth2
+   no switchport
+   ip address 10.2.2.2/31
+!
+interface Ethernet10
+   description Spine_1:Eth2
+   no switchport
+   ip address 10.2.6.2/31
+!
+interface Loopback0
+   ip address 10.3.4.0/32
+!
+interface Loopback100
+   ip address 10.3.5.0/32
+!
+interface Management1
+!
+interface Vlan10
+   description App1
+   ip address 10.3.6.254/24
+!
+ip routing
+!
+ip route 10.3.5.0/24 Null0
+ip route 10.3.6.0/24 Null0
+!
+router bgp 64512
+   router-id 10.3.4.0
+   maximum-paths 2
+   neighbor 10.2.2.3 remote-as 64512
+   neighbor 10.2.2.3 bfd
+   neighbor 10.2.2.3 password 7 CDMhtdkY700=
+   neighbor 10.2.6.3 remote-as 64512
+   neighbor 10.2.6.3 bfd
+   neighbor 10.2.6.3 password 7 chfxYS8rP44=
+   network 10.3.5.0/24
+   network 10.3.6.0/24
+!
 ```
 
  #### [Настройка Leaf_2](Leaf_2.cfg)
 
- ```
- 
+```
+vlan 10
+   name App1
+!
+interface Ethernet1
+   description Client_3:Eth0
+   switchport access vlan 10
+!
+interface Ethernet2
+   description Client_4:Eth0
+   switchport access vlan 10
+!
+interface Ethernet9
+   description Spine_0:Eth3
+   no switchport
+   ip address 10.2.2.4/31
+!
+interface Ethernet10
+   description Spine_1:Eth3
+   no switchport
+   ip address 10.2.6.4/31
+!
+interface Loopback0
+   ip address 10.3.8.0/32
+!
+interface Loopback100
+   ip address 10.3.9.0/32
+!
+interface Vlan10
+   description App1
+   ip address 10.3.10.254/24
+!
+ip routing
+!
+ip route 10.3.9.0/24 Null0
+ip route 10.3.10.0/24 Null0
+!
+router bgp 64512
+   maximum-paths 2
+   neighbor 10.2.2.5 remote-as 64512
+   neighbor 10.2.2.5 bfd
+   neighbor 10.2.2.5 description Spine0
+   neighbor 10.2.2.5 password 7 8jY+bQI+EZc=
+   neighbor 10.2.6.5 remote-as 64512
+   neighbor 10.2.6.5 bfd
+   neighbor 10.2.6.5 description Spine1
+   neighbor 10.2.6.5 password 7 QTE2ovjU2pY=
+   network 10.3.9.0/24
+   network 10.3.10.0/24
+!
 ```
 ### Проверка работы протокола ISIS
 
