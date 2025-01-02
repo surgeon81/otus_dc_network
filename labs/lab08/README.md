@@ -15,6 +15,7 @@
 8. Анонс >=Loopback100 интефейсов на уровнях Spine включается только в случаях терминации VxLAN туннеля на данном уровне
 9. На всех p2p линках с подсетью /31 используется функция "netwok type point-to-point"
 10. Для всех анонсируемых суммированных маршрутов добавляем в таблицу маршрутизации через интерфейс Null0
+11. Spine0 и Spine1 выполняют роль Route-Reflector
 
 ### Адреса устройств
 
@@ -331,38 +332,25 @@ router bgp 64512
    network 10.3.10.0/24
 !
 ```
-### Проверка работы протокола ISIS
+### Проверка работы протокола BGP
 
 1. Проверим, поднялись ли соедские отношения на примере Spine_0
 ````
-Spine_0#show isis neighbors 
- 
-Instance  VRF      System Id        Type Interface          SNPA              State Hold time   Circuit Id          
-1         default  Leaf_0           L2   Ethernet1          P2P               UP    24          19                  
-1         default  Leaf_1           L2   Ethernet2          P2P               UP    24          19                  
-1         default  Leaf_2           L2   Ethernet3          P2P               UP    23          19           
+Spine_0#show ip bgp summary 
+BGP summary information for VRF default
+Router identifier 10.2.0.0, local AS number 64512
+Neighbor Status Codes: m - Under maintenance
+  Description              Neighbor         V  AS           MsgRcvd   MsgSent  InQ OutQ  Up/Down State   PfxRcd PfxAcc
+  Leaf0                    10.2.2.0         4  64512          35660     35677    0    0   24d18h Estab   2      2
+  Leaf1                    10.2.2.2         4  64512          35622     35642    0    0 05:30:17 Estab   2      2
+  Leaf2                    10.2.2.4         4  64512          34242     34261    0    0   23d18h Estab   2      2
+        
 ````
-Как видим, соседство в состоянии UP для всех 3х Leaf. Соседства со Spine_1 быть не должно, так как нет прямых линков до него
+Как видим, соседство в состоянии Established для всех 3х Leaf. От каждого Leaf получено по два префикса и каждому Leaf отправлено 
 
-2. Проверим ISIS анонсы
+2. Взглянем на таблицу маршрутизации Spine_0
 ````
-Spine_0#show isis database 
-
-IS-IS Instance: 1 VRF: default
-  IS-IS Level 2 Link State Database
-    LSPID                   Seq Num  Cksum  Life Length IS Flags
-    Spine_0.00-00               691  24208   700    124 L2 <>
-    Spine_1.00-00               674  50809   525    124 L2 <>
-    Leaf_0.00-00                691  23165   783    135 L2 <>
-    Leaf_1.00-00                663   3174   910    135 L2 <>
-    Leaf_2.00-00                105   5614   825    135 L2 <>
-
-````
-Все Spine у нас роутеры Level-2. Как следствие, в базе ISIS мы видим базу только Level-2
-
-3. Взглянем на таблицу маршрутизации Spine_0
-````
-Spine_0#show ip route isis
+Spine_0#show ip route bgp
 
 VRF: default
 Codes: C - connected, S - static, K - kernel, 
@@ -377,38 +365,33 @@ Codes: C - connected, S - static, K - kernel,
        DP - Dynamic Policy Route, L - VRF Leaked,
        G  - gRIBI, RC - Route Cache Route
 
- I L2     10.3.1.0/32 [115/20] via 10.2.2.0, Ethernet1
- I L2     10.3.2.0/24 [115/20] via 10.2.2.0, Ethernet1
- I L2     10.3.5.0/32 [115/20] via 10.2.2.2, Ethernet2
- I L2     10.3.6.0/24 [115/20] via 10.2.2.2, Ethernet2
- I L2     10.3.9.0/32 [115/20] via 10.2.2.4, Ethernet3
- I L2     10.3.10.0/24 [115/20] via 10.2.2.4, Ethernet3
+ B I      10.3.1.0/24 [200/0] via 10.2.2.0, Ethernet1
+ B I      10.3.2.0/24 [200/0] via 10.2.2.0, Ethernet1
+ B I      10.3.5.0/24 [200/0] via 10.2.2.2, Ethernet2
+ B I      10.3.6.0/24 [200/0] via 10.2.2.2, Ethernet2
+ B I      10.3.9.0/24 [200/0] via 10.2.2.4, Ethernet3
+ B I      10.3.10.0/24 [200/0] via 10.2.2.4, Ethernet3
+
  `````
- Мы видим, что p2p подсети отстутсвуют в таблице. На данный момент необходимости в них нет. Это повышает безопасность сети а так же снижает нагрузку на оборудование
+ Мы видим, что присутствуют подсети Loopback100 и Clinet
 
-4. Что же у нас на уровне Leaf на примере Leaf_0?
+3. Что же у нас на уровне Leaf на примере Leaf_0?
 
 `````
-Leaf_0(config-router-isis)#show isis database 
-
-IS-IS Instance: 1 VRF: default
-  IS-IS Level 1 Link State Database
-    LSPID                   Seq Num  Cksum  Life Length IS Flags
-    Leaf_0.00-00                688  41026  1037    111 L2 <DefaultAtt>
-  IS-IS Level 2 Link State Database
-    LSPID                   Seq Num  Cksum  Life Length IS Flags
-    Spine_0.00-00               692  57070  1078    124 L2 <>
-    Spine_1.00-00               675  55049   996    124 L2 <>
-    Leaf_0.00-00                691  23165   447    135 L2 <>
-    Leaf_1.00-00                663   3174   573    135 L2 <>
-    Leaf_2.00-00                105   5614   488    135 L2 <>
+Leaf_0#show ip bgp summary 
+BGP summary information for VRF default
+Router identifier 10.3.0.0, local AS number 64512
+Neighbor Status Codes: m - Under maintenance
+  Description              Neighbor         V  AS           MsgRcvd   MsgSent  InQ OutQ  Up/Down State   PfxRcd PfxAcc
+  Spine0                   10.2.2.1         4  64512          35766     35749    0    0   24d19h Estab   5      5
+  Spine1                   10.2.6.1         4  64512          35688     35675    0    0   24d18h Estab   5      5
 `````
 
-Тут уже видим две базы ISIS: база уровня 2 и база уровня 1.
+Мы видим, что BGP сессия установлена с двумя Spine, получено и установлено по 5 префиксов с каждого Leaf.
 
-5. Маршруты на уровне Leaf.
+4. Маршруты на уровне Leaf.
 ````
-Leaf_0(config-router-isis)# show ip route isis
+Leaf_0#show ip route bgp 
 
 VRF: default
 Codes: C - connected, S - static, K - kernel, 
@@ -423,18 +406,41 @@ Codes: C - connected, S - static, K - kernel,
        DP - Dynamic Policy Route, L - VRF Leaked,
        G  - gRIBI, RC - Route Cache Route
 
- I L2     10.3.5.0/32 [115/30] via 10.2.2.1, Ethernet9
+ B I      10.2.2.0/24 [200/0] via 10.2.2.1, Ethernet9
+ B I      10.2.6.0/24 [200/0] via 10.2.6.1, Ethernet10
+ B I      10.3.5.0/24 [200/0] via 10.2.2.1, Ethernet9
+                              via 10.2.6.1, Ethernet10
+ B I      10.3.6.0/24 [200/0] via 10.2.2.1, Ethernet9
+                              via 10.2.6.1, Ethernet10
+ B I      10.3.9.0/24 [200/0] via 10.2.2.1, Ethernet9
+                              via 10.2.6.1, Ethernet10
+ B I      10.3.10.0/24 [200/0] via 10.2.2.1, Ethernet9
                                via 10.2.6.1, Ethernet10
- I L2     10.3.6.0/24 [115/30] via 10.2.2.1, Ethernet9
-                               via 10.2.6.1, Ethernet10
- I L2     10.3.9.0/32 [115/30] via 10.2.2.1, Ethernet9
-                               via 10.2.6.1, Ethernet10
- I L2     10.3.10.0/24 [115/30] via 10.2.2.1, Ethernet9
-                                via 10.2.6.1, Ethernet10
-````
-Тут уже видим, что имеется два равнозначных маршрута до Looback100 и SVI интефейсов остальных Leaf, что позволит при включении ecmp использовать их одновременно.
 
-6. Ну, и проверим связность клиентов на примере Client_1
+
+````
+Тут уже видим, что имеется два равнозначных маршрута до Looback100 и SVI интефейсов остальных Leaf, что позволит при включении ecmp использовать их одновременно. Более того, присуствуют маршруты p2p линков. Причина этих маршрутов - iBGP не меняет next-hop аттрибут при передачи маршрута и при отсутствии p2p маршрутов, префиксы до Loopback100 и сервисных подсетей не будут внесены в основнуйю таблицу маршрутизации.
+
+````
+Leaf_0#show ip bgp neighbors 10.2.2.1 received-routes 
+BGP routing table information for VRF default
+Router identifier 10.3.0.0, local AS number 64512
+Route status codes: * - valid, > - active, # - not installed, E - ECMP head, e - ECMP
+                    S - Stale, c - Contributing to ECMP, b - backup, L - labeled-unicast
+Origin codes: i - IGP, e - EGP, ? - incomplete
+AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
+
+         Network                Next Hop            Metric  LocPref Weight  Path
+ * >     10.2.2.0/24            10.2.2.1              -       100     -       ?
+ *  ec   10.3.5.0/24            10.2.2.2              -       100     -       ? Or-ID: 10.3.4.0 C-LST: 10.2.0.0
+ *  ec   10.3.6.0/24            10.2.2.2              -       100     -       i Or-ID: 10.3.4.0 C-LST: 10.2.0.0
+ *  ec   10.3.9.0/24            10.2.2.4              -       100     -       ? Or-ID: 10.3.9.0 C-LST: 10.2.0.0
+ *  ec   10.3.10.0/24           10.2.2.4              -       100     -       i Or-ID: 10.3.9.0 C-LST: 10.2.0.0
+
+````
+Как видим Next-Hop для префиксов, анонсированных другими Leaf, является их p2p IP адрес
+
+5. Ну, и проверим связность клиентов на примере Client_1
 ````
 VPCS> ping 10.3.6.1
 
@@ -460,4 +466,3 @@ VPCS> ping 10.3.10.2
 
 VPCS> 
 ````
-Несмотря на то, что мы отключили анонс p2p линоков, это не мешает конечному оборудованию взаимодействовать друг с другом.
