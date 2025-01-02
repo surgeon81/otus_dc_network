@@ -1,4 +1,4 @@
-# Построение Underlay сети(ISIS)
+# Построение Underlay сети(BGP)
 
 ### Цели
 - Настроить BGP для Underlay сети
