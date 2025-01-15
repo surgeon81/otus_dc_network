@@ -163,12 +163,29 @@ router bgp 64512
 #### [Настройка Leaf_0](Leaf_0.cfg)
 
 ```
+vlan 10
+   name App1
+!
+vrf instance L3VPN
+!
+interface Ethernet1
+   description Client_1:Eth0
+   switchport access vlan 10
+!
+interface Vlan10
+   vrf L3VPN
+   ip address virtual 192.168.1.254/24
+!
 interface Vxlan1
    vxlan source-interface Loopback100
    vxlan udp-port 4789
    vxlan vlan 10 vni 10010
+   vxlan vrf L3VPN vni 10000
+!
+ip virtual-router mac-address 00:00:80:00:00:00
 !
 ip routing
+ip routing vrf L3VPN
 !
 ip route 10.3.1.0/24 Null0
 ip route 10.3.2.0/24 Null0
@@ -210,18 +227,40 @@ router bgp 64512
    !
    address-family ipv4
       network 10.3.1.0/24
+   !
+   vrf L3VPN
+      rd 10.3.0.0:10000
+      route-target import evpn 64512:10000
+      route-target export evpn 64512:10000
+      redistribute connected
 !
 ```
 
  #### [Настройка Leaf_1](Leaf_1.cfg)
 
 ```
+vlan 20
+!
+vrf instance L3VPN
+!
+interface Ethernet1
+   description Client_2:Eth0
+   switchport access vlan 20
+!
+interface Vlan20
+   vrf L3VPN
+   ip address virtual 192.168.2.254/24
+!
 interface Vxlan1
    vxlan source-interface Loopback100
    vxlan udp-port 4789
    vxlan vlan 20 vni 10020
+   vxlan vrf L3VPN vni 10000
+!
+ip virtual-router mac-address 00:00:80:00:00:00
 !
 ip routing
+ip routing vrf L3VPN
 !
 ip route 10.3.5.0/24 Null0
 ip route 10.3.6.0/24 Null0
@@ -257,19 +296,54 @@ router bgp 64512
    !
    address-family ipv4
       network 10.3.5.0/24
+   !
+   vrf L3VPN
+      rd 10.3.4.0:10000
+      route-target import evpn 64512:10000
+      route-target export evpn 64512:10000
+      redistribute connected
 !
+end
 ```
 
  #### [Настройка Leaf_2](Leaf_2.cfg)
 
 ```
+vlan 10
+   name App1
+!
+vlan 30
+!
+vrf instance L3VPN
+!
+interface Ethernet1
+   description Client_3:Eth0
+   switchport access vlan 10
+!
+interface Ethernet2
+   description Client_4:Eth0
+   switchport access vlan 30
+!
+!
+interface Vlan10
+   vrf L3VPN
+   ip address virtual 192.168.1.254/24
+!
+interface Vlan30
+   vrf L3VPN
+   ip address virtual 192.168.3.254/24
+!
 interface Vxlan1
    vxlan source-interface Loopback100
    vxlan udp-port 4789
    vxlan vlan 10 vni 10010
-   vxlan vlan 20 vni 10020
+   vxlan vlan 30 vni 10030
+   vxlan vrf L3VPN vni 10000
+!
+ip virtual-router mac-address 00:00:80:00:00:00
 !
 ip routing
+ip routing vrf L3VPN
 !
 ip route 10.3.9.0/24 Null0
 ip route 10.3.10.0/24 Null0
@@ -300,9 +374,9 @@ router bgp 64512
       route-target both 64512:10010
       redistribute learned
    !
-   vlan 20
-      rd 10.3.8.0:20
-      route-target both 64512:10020
+   vlan 30
+      rd 10.3.8.0:30
+      route-target both 64512:10030
       redistribute learned
    !
    address-family evpn
@@ -310,6 +384,12 @@ router bgp 64512
    !
    address-family ipv4
       network 10.3.9.0/24
+   !
+   vrf L3VPN
+      rd 10.3.8.0:10000
+      route-target import evpn 64512:10000
+      route-target export evpn 64512:10000
+      redistribute connected
 !
 end
 ```
@@ -350,12 +430,21 @@ AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Li
           Network                Next Hop              Metric  LocPref Weight  Path
  * >      RD: 10.3.0.0:10 mac-ip 0050.7966.6806
                                  10.3.1.0              -       100     0       i
+ * >      RD: 10.3.0.0:10 mac-ip 0050.7966.6806 192.168.1.1
+                                 10.3.1.0              -       100     0       i
  * >      RD: 10.3.4.0:20 mac-ip 0050.7966.6807
+                                 10.3.5.0              -       100     0       i
+ * >      RD: 10.3.4.0:20 mac-ip 0050.7966.6807 192.168.2.2
                                  10.3.5.0              -       100     0       i
  * >      RD: 10.3.8.0:10 mac-ip 0050.7966.6808
                                  10.3.9.0              -       100     0       i
- * >      RD: 10.3.8.0:20 mac-ip 0050.7966.6809
+ * >      RD: 10.3.8.0:10 mac-ip 0050.7966.6808 192.168.1.3
                                  10.3.9.0              -       100     0       i
+ * >      RD: 10.3.8.0:30 mac-ip 0050.7966.6809
+                                 10.3.9.0              -       100     0       i
+ * >      RD: 10.3.8.0:30 mac-ip 0050.7966.6809 192.168.3.4
+                                 10.3.9.0              -       100     0       i
+
 Spine_0#show bgp evpn route-type imet 
 BGP routing table information for VRF default
 Router identifier 10.2.0.0, local AS number 64512
@@ -377,7 +466,7 @@ Spine_0#
 
 
  `````
- Мы видим два типа маршрутов Type-3 (imet), чтобы знать куда отправлять BUM трафик, например ARP. А так же тип маршрутов Type-2 (mac-ip). Так как в данном случае мы передаем MAC адреса, то видим мак-адреса наших клиентов. RD позволяет их отличать друг от друга
+ Мы видим два типа маршрутов Type-3 (imet), чтобы знать куда отправлять BUM трафик, например ARP. А так же тип маршрутов Type-2 (mac-ip). Так как в данном случае мы передаем MAC адреса, то видим мак-адреса наших клиентов. RD позволяет их отличать друг от друга. Кроме того, в таблице появились маршруты типа mac - mac. Данные маршруты передают IP адреса конечных устройств и их маки c целью дальнейшей маршрутизации
 
 3. Что же у нас на уровне Leaf на примере Leaf_2?
 
@@ -398,9 +487,9 @@ Neighbor          AS Session State AFI/SAFI                AFI/SAFI State   NLRI
 
 Мы видим, что BGP сессии установлены с двумя Spine как для передачи IPv4 маршрутов так и для L2VPN информации.
 
-4. Маршруты на уровне Leaf.
+4. Маршруты на уровне Leaf не ссильно отличаются от уровня Spine. Но у нас еще появляются маршруты 5го типа - Route Type 5, для анонсирования подсетей
 ````
-Leaf_2# show bgp evpn route-type mac-ip 
+Leaf_2#show bgp evpn route-type ip-prefix ipv4
 BGP routing table information for VRF default
 Router identifier 10.3.8.0, local AS number 64512
 Route status codes: * - valid, > - active, S - Stale, E - ECMP head, e - ECMP
@@ -409,42 +498,20 @@ Origin codes: i - IGP, e - EGP, ? - incomplete
 AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
 
           Network                Next Hop              Metric  LocPref Weight  Path
- * >Ec    RD: 10.3.0.0:10 mac-ip 0050.7966.6806
-                                 10.3.1.0              -       100     0       i Or-ID: 10.3.0.0 C-LST: 10.2.0.0 
- *  ec    RD: 10.3.0.0:10 mac-ip 0050.7966.6806
+ * >Ec    RD: 10.3.0.0:10000 ip-prefix 192.168.1.0/24
                                  10.3.1.0              -       100     0       i Or-ID: 10.3.0.0 C-LST: 10.2.4.0 
- * >Ec    RD: 10.3.4.0:20 mac-ip 0050.7966.6807
-                                 10.3.5.0              -       100     0       i Or-ID: 10.3.4.0 C-LST: 10.2.0.0 
- *  ec    RD: 10.3.4.0:20 mac-ip 0050.7966.6807
-                                 10.3.5.0              -       100     0       i Or-ID: 10.3.4.0 C-LST: 10.2.4.0 
- * >      RD: 10.3.8.0:10 mac-ip 0050.7966.6808
-                                 -                     -       -       0       i
- * >      RD: 10.3.8.0:20 mac-ip 0050.7966.6809
-                                 -                     -       -       0       i
-Leaf_2# show bgp evpn route-type imet 
-BGP routing table information for VRF default
-Router identifier 10.3.8.0, local AS number 64512
-Route status codes: * - valid, > - active, S - Stale, E - ECMP head, e - ECMP
-                    c - Contributing to ECMP, % - Pending BGP convergence
-Origin codes: i - IGP, e - EGP, ? - incomplete
-AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
-
-          Network                Next Hop              Metric  LocPref Weight  Path
- * >Ec    RD: 10.3.0.0:10 imet 10.3.1.0
+ *  ec    RD: 10.3.0.0:10000 ip-prefix 192.168.1.0/24
                                  10.3.1.0              -       100     0       i Or-ID: 10.3.0.0 C-LST: 10.2.0.0 
- *  ec    RD: 10.3.0.0:10 imet 10.3.1.0
-                                 10.3.1.0              -       100     0       i Or-ID: 10.3.0.0 C-LST: 10.2.4.0 
- * >Ec    RD: 10.3.4.0:20 imet 10.3.5.0
+ * >      RD: 10.3.8.0:10000 ip-prefix 192.168.1.0/24
+                                 -                     -       -       0       i
+ * >Ec    RD: 10.3.4.0:10000 ip-prefix 192.168.2.0/24
                                  10.3.5.0              -       100     0       i Or-ID: 10.3.4.0 C-LST: 10.2.0.0 
- *  ec    RD: 10.3.4.0:20 imet 10.3.5.0
-                                 10.3.5.0              -       100     0       i Or-ID: 10.3.4.0 C-LST: 10.2.4.0 
- * >      RD: 10.3.8.0:10 imet 10.3.9.0
-                                 -                     -       -       0       i
- * >      RD: 10.3.8.0:20 imet 10.3.9.0
-                                 -                     -       -       0       i
-Leaf_2#
+ *  ec    RD: 10.3.4.0:10000 ip-prefix 192.168.2.0/24                           
+ 
+ * >      RD: 10.3.8.0:10000 ip-prefix 192.168.3.0/24 -         -      0       i  Or-ID: 10.3.4.0 C-LST: 10.2.4.0
+                                                           
 ````
-Тут уже видим, что имеется два равнозначных маршрута для каждого полученного мак-адреса. Что-же у нас с мак-таблицей
+Что-же у нас с мак-таблицей
 
 
 ````
@@ -454,17 +521,37 @@ Leaf_2#show mac address-table
 
 Vlan    Mac Address       Type        Ports      Moves   Last Move
 ----    -----------       ----        -----      -----   ---------
-  10    0050.7966.6806    DYNAMIC     Vx1        1       0:41:58 ago
-  10    0050.7966.6808    DYNAMIC     Et1        1       0:41:22 ago
-  20    0050.7966.6807    DYNAMIC     Vx1        1       0:21:50 ago
-  20    0050.7966.6809    DYNAMIC     Et2        1       0:21:50 ago
-Total Mac Addresses for this criterion: 4
+   1    0000.8000.0000    STATIC      Cpu
+  10    0000.8000.0000    STATIC      Cpu
+  10    0050.7966.6806    DYNAMIC     Vx1        1       0:05:00 ago
+  10    0050.7966.6808    DYNAMIC     Et1        1       0:05:01 ago
+  30    0000.8000.0000    STATIC      Cpu
+  30    0050.7966.6809    DYNAMIC     Et2        1       0:04:54 ago
+4094    0000.8000.0000    STATIC      Cpu
+4094    5000.0003.3766    DYNAMIC     Vx1        1       1 day, 22:18:09 ago
+4094    5000.00d5.5dc0    DYNAMIC     Vx1        1       1 day, 22:07:05 ago
 ````
-Как видим мы получам мак-адреса удаленных клиентов через интерфейс VxLAN 1 и локально через Eth порты
+Как видим мы получам мак-адреса удаленных клиентов через интерфейс VxLAN 1 и локально через Eth порты а так же появились дополнительные мак-адреса в VLAN 4094. Это мак-адреса для работы маршрутизаци
+
+6. Маршруты в VRF
+````
+Leaf_2#show ip route vrf L3VPN
+
+...
+
+Gateway of last resort is not set
+
+ B I      192.168.1.1/32 [200/0] via VTEP 10.3.1.0 VNI 10000 router-mac 50:00:00:d5:5d:c0 local-interface Vxlan1
+ C        192.168.1.0/24 is directly connected, Vlan10
+ B I      192.168.2.2/32 [200/0] via VTEP 10.3.5.0 VNI 10000 router-mac 50:00:00:03:37:66 local-interface Vxlan1
+ B I      192.168.2.0/24 [200/0] via VTEP 10.3.5.0 VNI 10000 router-mac 50:00:00:03:37:66 local-interface Vxlan1
+ C        192.168.3.0/24 is directly connected, Vlan30
+
+````
+Видим подсети, которые мы импортируем через RT
 
 6. Проверим состояние VxLAN итерфейса
 ````
-Leaf_2#show interfaces vxlan 1
 Vxlan1 is up, line protocol is up (connected)
   Hardware is Vxlan
   Source interface is Loopback100 and is active with 10.3.9.0
@@ -473,26 +560,38 @@ Vxlan1 is up, line protocol is up (connected)
   Remote MAC learning via EVPN
   VNI mapping to VLANs
   Static VLAN to VNI mapping is 
-    [10, 10010]       [20, 10020]      
+    [10, 10010]       [30, 10030]      
+  Dynamic VLAN to VNI mapping for 'evpn' is
+    [4094, 10000]    
   Note: All Dynamic VLANs used by VCS are internal VLANs.
         Use 'show vxlan vni' for details.
-  Static VRF to VNI mapping is not configured
+  Static VRF to VNI mapping is 
+   [L3VPN, 10000]
   Headend replication flood vtep list is:
     10 10.3.1.0       
-    20 10.3.5.0       
   Shared Router MAC is 0000.0000.0000
+
 ````
-Как мы видим по параметру "Headend replication flood vtep list is" VxLAN туннель у нас установлен с Leaf_1 для VLAN 10 и Leaf_2 для VLAN 20
+Как мы видим по параметру "Headend replication flood vtep list is" VxLAN туннель у нас установлен с Leaf_0 для VLAN 10 а так же наличия промежуточного VNI для маршрутизации
 
 7. Ну, и проверим связность клиентов на примере Client_1
 ````
-VPCS> ping 192.168.1.3        
+Client_1> ping 192.168.2.2
 
-84 bytes from 192.168.1.3 icmp_seq=1 ttl=64 time=49.756 ms
-84 bytes from 192.168.1.3 icmp_seq=2 ttl=64 time=33.073 ms
-84 bytes from 192.168.1.3 icmp_seq=3 ttl=64 time=41.629 ms
-84 bytes from 192.168.1.3 icmp_seq=4 ttl=64 time=34.794 ms
-84 bytes from 192.168.1.3 icmp_seq=5 ttl=64 time=37.916 ms
+84 bytes from 192.168.2.2 icmp_seq=1 ttl=62 time=86.222 ms
+84 bytes from 192.168.2.2 icmp_seq=2 ttl=62 time=50.935 ms
+^C
+Client_1> ping 192.168.1.3
+
+84 bytes from 192.168.1.3 icmp_seq=1 ttl=64 time=157.572 ms
+84 bytes from 192.168.1.3 icmp_seq=2 ttl=64 time=69.884 ms
+^C
+Client_1> ping 192.168.3.4
+
+84 bytes from 192.168.3.4 icmp_seq=1 ttl=62 time=94.966 ms
+84 bytes from 192.168.3.4 icmp_seq=2 ttl=62 time=82.320 ms
+^C
+
 
 VPCS> 
 ````
