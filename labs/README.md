@@ -4,4 +4,5 @@
  - [Урок 6. Построение Underlay сети на базе ISIS](lab06/)
  - [Урок 8. Построение Underlay сети на базе BGP](lab08/)
  - [Урок 11. VxLAN. EVPN L2](lab011/)
+ - [Урок 12. VxLAN. EVPN L3](lab012/)
 
