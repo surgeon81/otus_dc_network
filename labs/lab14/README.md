@@ -99,39 +99,46 @@ Clietn4|SW_2|1|192.168.1.4|192.168.1.254|24|10
 #### [Настройка Spine_0](Spine_0.cfg)
 
 ```
+interface Loopback0
+   ip address 10.2.0.0/32
+!
+ip route 10.2.0.0/22 Null0
+!
 router bgp 64512
    router-id 10.2.0.0
-   maximum-paths 4 ecmp 64
+   maximum-paths 4 ecmp 4
    neighbor evpn peer group
    neighbor evpn remote-as 64512
-   neighbor evpn update-source Loopback100
+   neighbor evpn update-source Loopback0
    neighbor evpn route-reflector-client
    neighbor evpn password 7 87NCY2eLqQQ=
    neighbor evpn send-community extended
    neighbor underlay peer group
    neighbor underlay remote-as 64512
-   neighbor underlay bfd
    neighbor underlay route-reflector-client
    neighbor underlay password 7 ftDxwZDN4HE=
    neighbor 10.2.2.0 peer group underlay
-   neighbor 10.2.2.0 description Leaf_0
+   neighbor 10.2.2.0 description Under_Leaf-0_0
    neighbor 10.2.2.2 peer group underlay
-   neighbor 10.2.2.2 description Leaf_1
+   neighbor 10.2.2.2 description Under_Leaf-0_1
    neighbor 10.2.2.4 peer group underlay
-   neighbor 10.2.2.4 description Leaf_2
-   neighbor 10.3.1.0 peer group evpn
-   neighbor 10.3.1.0 description Leaf_0
-   neighbor 10.3.5.0 peer group evpn
-   neighbor 10.3.5.0 description Leaf_1
-   neighbor 10.3.9.0 peer group evpn
-   neighbor 10.3.9.0 description Leaf_2
+   neighbor 10.2.2.4 description Under_Leaf-1_0
+   neighbor 10.2.2.6 peer group underlay
+   neighbor 10.2.2.6 description Under_Leaf-1_1
+   neighbor 10.3.0.0 peer group evpn
+   neighbor 10.3.0.0 description Over_Leaf-0_0
+   neighbor 10.3.0.1 peer group evpn
+   neighbor 10.3.0.1 description Over_Leaf-0_1
+   neighbor 10.3.4.0 peer group evpn
+   neighbor 10.3.4.0 description Over_Leaf-1_0
+   neighbor 10.3.4.1 peer group evpn
+   neighbor 10.3.4.1 description Over_Leaf-1_1
    !
    address-family evpn
       neighbor evpn activate
    !
    address-family ipv4
-      network 10.2.1.0/24
-      network 10.2.2.0/24
+      network 10.2.0.0/22
 !
 
 
@@ -140,12 +147,20 @@ router bgp 64512
 #### [Настройка Spine_1](Spine_1.cfg)
 
 ```
+
+interface Loopback0
+   ip address 10.2.4.0/32
+!
+ip routing
+!
+ip route 10.2.4.0/22 Null0
+!
 router bgp 64512
    router-id 10.2.4.0
    maximum-paths 4 ecmp 64
    neighbor evpn peer group
    neighbor evpn remote-as 64512
-   neighbor evpn update-source Loopback100
+   neighbor evpn update-source Loopback0
    neighbor evpn route-reflector-client
    neighbor evpn password 7 87NCY2eLqQQ=
    neighbor evpn send-community extended
@@ -160,20 +175,25 @@ router bgp 64512
    neighbor 10.2.6.2 description Leaf_1
    neighbor 10.2.6.4 peer group underlay
    neighbor 10.2.6.4 description Leaf_2
-   neighbor 10.3.1.0 peer group evpn
-   neighbor 10.3.1.0 description Leaf_0
-   neighbor 10.3.5.0 peer group evpn
-   neighbor 10.3.5.0 description Leaf_1
-   neighbor 10.3.9.0 peer group evpn
-   neighbor 10.3.9.0 description Leaf_2
+   neighbor 10.2.6.6 peer group underlay
+   neighbor 10.2.6.6 description Leaf_3
+   neighbor 10.3.0.0 peer group evpn
+   neighbor 10.3.0.0 description Over_Leaf-0_0
+   neighbor 10.3.0.1 peer group evpn
+   neighbor 10.3.0.1 description Over_Leaf-0_1
+   neighbor 10.3.4.0 peer group evpn
+   neighbor 10.3.4.0 description Over_Leaf-1_0
+   neighbor 10.3.4.1 peer group evpn
+   neighbor 10.3.4.1 description Over_Leaf-1_1
    !
    address-family evpn
       neighbor evpn activate
    !
    address-family ipv4
-      network 10.2.5.0/24
-      network 10.2.6.0/24
+      network 10.2.4.0/22
 !
+end
+
 ```
 
 #### [Настройка Leaf_0](Leaf_0.cfg)
