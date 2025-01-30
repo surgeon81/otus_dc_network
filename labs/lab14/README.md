@@ -5,7 +5,7 @@
 
 
 ### Топология сети
-![BGP-L3VPN](/labs/lab12/image.png)
+![VxLAN-MLAG](/labs/lab14/image.png)
 
 ### Описание топологии
 1. Для Overlay и Underlay сети используется протокол iBGP
@@ -196,65 +196,122 @@ end
 
 ```
 
-#### [Настройка Leaf_0](Leaf_0.cfg)
+#### [Настройка Leaf-0_0](Leaf-0_0.cfg)
 
 ```
+!
+link tracking group EVPN-MLAG-MH
+   recovery delay 60
+!
 vlan 10
    name App1
 !
-vrf instance L3VPN
+vlan 4093-4094
+   trunk group mlag-peer
+!
+vrf instance mgmt
+!
+interface Port-Channel1
+   switchport access vlan 10
+   mlag 10
+   link tracking group EVPN-MLAG-MH downstream
+!
+interface Port-Channel3
+   description Leaf-0_1:Po3
+   mtu 9214
+   switchport mode trunk
+   switchport trunk group mlag-peer
 !
 interface Ethernet1
-   description Client_1:Eth0
+   description SW_1:Eth7
    switchport access vlan 10
+   channel-group 1 mode active
 !
-interface Vlan10
-   vrf L3VPN
-   ip address virtual 192.168.1.254/24
+interface Ethernet3
+   description Leaf-1_0:Eth3
+   mtu 9214
+   channel-group 3 mode active
+!
+interface Ethernet4
+   description Leaf-0_1:Eth4
+   mtu 9214
+   channel-group 3 mode active
+!
+interface Ethernet9
+   description Spine_0:Eth1
+   mtu 9214
+   no switchport
+   ip address 10.2.2.0/31
+   link tracking group EVPN-MLAG-MH upstream
+!
+interface Ethernet10
+   description Spine_1:Eth1
+   mtu 9214
+   no switchport
+   ip address 10.2.6.0/31
+   link tracking group EVPN-MLAG-MH upstream
+!
+interface Loopback0
+   ip address 10.3.0.0/32
+!
+interface Loopback100
+   ip address 10.3.1.0/32
+!
+interface Management0
+   vrf mgmt
+   ip address 172.16.0.1/24
+!
+interface Vlan4093
+   ip address 10.3.0.128/31
+!
+interface Vlan4094
+   no autostate
+   ip address 192.168.0.0/31
 !
 interface Vxlan1
    vxlan source-interface Loopback100
    vxlan udp-port 4789
    vxlan vlan 10 vni 10010
-   vxlan vrf L3VPN vni 10000
 !
 ip virtual-router mac-address 00:00:80:00:00:00
 !
 ip routing
-ip routing vrf L3VPN
+no ip routing vrf mgmt
 !
-ip route 10.3.1.0/24 Null0
-ip route 10.3.2.0/24 Null0
+mlag configuration
+   domain-id Rack-1
+   local-interface Vlan4094
+   peer-address 192.168.0.1
+   peer-address heartbeat 172.16.0.2 vrf mgmt
+   peer-link Port-Channel3
+   dual-primary detection delay 10 action errdisable all-interfaces
 !
 router bgp 64512
    router-id 10.3.0.0
    maximum-paths 4 ecmp 64
    neighbor evpn peer group
    neighbor evpn remote-as 64512
-   neighbor evpn update-source Loopback100
+   neighbor evpn update-source Loopback0
    neighbor evpn password 7 87NCY2eLqQQ=
-   neighbor evpn send-community extended
+   neighbor evpn send-community standard extended
+   neighbor over peer group
+   neighbor overlay peer group
    neighbor underlay peer group
    neighbor underlay remote-as 64512
-   neighbor underlay bfd
    neighbor underlay password 7 ftDxwZDN4HE=
-   neighbor 10.2.1.0 peer group evpn
-   neighbor 10.2.1.0 description Spine_0
+   neighbor 10.2.0.0 peer group evpn
+   neighbor 10.2.0.0 description Over_Spine_0
    neighbor 10.2.2.1 peer group underlay
-   neighbor 10.2.2.1 remote-as 64512
-   neighbor 10.2.2.1 bfd
-   neighbor 10.2.2.1 description Spine_0
-   neighbor 10.2.2.1 password 7 XWFo5YHkqfI=
-   neighbor 10.2.5.0 peer group evpn
-   neighbor 10.2.5.0 description Spine_1
+   neighbor 10.2.2.1 description Under_Spine_0
+   neighbor 10.2.4.0 peer group evpn
+   neighbor 10.2.4.0 description Over_Spine_1
    neighbor 10.2.6.1 peer group underlay
-   neighbor 10.2.6.1 remote-as 64512
-   neighbor 10.2.6.1 bfd
-   neighbor 10.2.6.1 description Spine_1
-   neighbor 10.2.6.1 password 7 E3IUT8qCXKI=
+   neighbor 10.2.6.1 description Under_Spine_0
+   neighbor 10.3.0.129 peer group underlay
+   neighbor 10.3.0.129 description Under_Leaf-0_1
    !
    vlan 10
-      rd 10.3.0.0:10
+      rd 10.3.1.0:10
       route-target both 64512:10010
       redistribute learned
    !
@@ -262,296 +319,196 @@ router bgp 64512
       neighbor evpn activate
    !
    address-family ipv4
-      network 10.3.1.0/24
-   !
-   vrf L3VPN
-      rd 10.3.0.0:10000
-      route-target import evpn 64512:10000
-      route-target export evpn 64512:10000
-      redistribute connected
-!
-```
-
- #### [Настройка Leaf_1](Leaf_1.cfg)
-
-```
-vlan 20
-!
-vrf instance L3VPN
-!
-interface Ethernet1
-   description Client_2:Eth0
-   switchport access vlan 20
-!
-interface Vlan20
-   vrf L3VPN
-   ip address virtual 192.168.2.254/24
-!
-interface Vxlan1
-   vxlan source-interface Loopback100
-   vxlan udp-port 4789
-   vxlan vlan 20 vni 10020
-   vxlan vrf L3VPN vni 10000
-!
-ip virtual-router mac-address 00:00:80:00:00:00
-!
-ip routing
-ip routing vrf L3VPN
-!
-ip route 10.3.5.0/24 Null0
-ip route 10.3.6.0/24 Null0
-!
-router bgp 64512
-   router-id 10.3.4.0
-   maximum-paths 4 ecmp 64
-   neighbor evpn peer group
-   neighbor evpn remote-as 64512
-   neighbor evpn update-source Loopback100
-   neighbor evpn password 7 87NCY2eLqQQ=
-   neighbor evpn send-community extended
-   neighbor underlay peer group
-   neighbor underlay remote-as 64512
-   neighbor underlay bfd
-   neighbor underlay password 7 ftDxwZDN4HE=
-   neighbor 10.2.1.0 peer group evpn
-   neighbor 10.2.1.0 description Spine_0
-   neighbor 10.2.2.3 peer group underlay
-   neighbor 10.2.2.3 description Spine_0
-   neighbor 10.2.5.0 peer group evpn
-   neighbor 10.2.5.0 description Spine_1
-   neighbor 10.2.6.3 peer group underlay
-   neighbor 10.2.6.3 description Spine_1
-   !
-   vlan 20
-      rd 10.3.4.0:20
-      route-target both 64512:10020
-      redistribute learned
-   !
-   address-family evpn
-      neighbor evpn activate
-   !
-   address-family ipv4
-      network 10.3.5.0/24
-   !
-   vrf L3VPN
-      rd 10.3.4.0:10000
-      route-target import evpn 64512:10000
-      route-target export evpn 64512:10000
-      redistribute connected
+      network 10.3.0.0/32
+      network 10.3.0.128/31
+      network 10.3.1.0/32
 !
 end
-```
-
- #### [Настройка Leaf_2](Leaf_2.cfg)
 
 ```
+
+ #### [Настройка Leaf-0_1](Leaf-0_1.cfg)
+
+```
+!
+link tracking group EVPN-MLAG-MH
+   recovery delay 60
+!
 vlan 10
    name App1
 !
-vlan 30
+vlan 4093-4094
+   trunk group mlag-peer
 !
-vrf instance L3VPN
+vrf instance mgmt
+!
+interface Port-Channel1
+   switchport access vlan 10
+   mlag 10
+   link tracking group EVPN-MLAG-MH downstream
+!
+interface Port-Channel3
+   description Leaf-0_0:Po3
+   mtu 9214
+   switchport mode trunk
+   switchport trunk group mlag-peer
 !
 interface Ethernet1
-   description Client_3:Eth0
+   description SW_1:Eth8
    switchport access vlan 10
+   channel-group 1 mode active
 !
-interface Ethernet2
-   description Client_4:Eth0
-   switchport access vlan 30
+interface Ethernet3
+   description Leaf-0_0:Eth3
+   mtu 9214
+   channel-group 3 mode active
 !
+interface Ethernet4
+   description Leaf-0_0:Eth4
+   mtu 9214
+   channel-group 3 mode active
 !
-interface Vlan10
-   vrf L3VPN
-   ip address virtual 192.168.1.254/24
+interface Ethernet9
+   description Spine_0:Eth2
+   mtu 9214
+   no switchport
+   ip address 10.2.2.2/31
+   link tracking group EVPN-MLAG-MH upstream
 !
-interface Vlan30
-   vrf L3VPN
-   ip address virtual 192.168.3.254/24
+interface Ethernet10
+   description Spine_1:Eth2
+   mtu 9214
+   no switchport
+   ip address 10.2.6.2/31
+   link tracking group EVPN-MLAG-MH upstream
+!
+interface Loopback0
+   ip address 10.3.0.1/32
+!
+interface Loopback100
+   ip address 10.3.1.0/32
+!
+interface Management0
+   vrf mgmt
+   ip address 172.16.0.2/24
+!
+interface Vlan4093
+   ip address 10.3.0.129/31
+!
+interface Vlan4094
+   no autostate
+   ip address 192.168.0.1/31
 !
 interface Vxlan1
    vxlan source-interface Loopback100
    vxlan udp-port 4789
    vxlan vlan 10 vni 10010
-   vxlan vlan 30 vni 10030
-   vxlan vrf L3VPN vni 10000
 !
 ip virtual-router mac-address 00:00:80:00:00:00
 !
 ip routing
-ip routing vrf L3VPN
+no ip routing vrf mgmt
 !
-ip route 10.3.9.0/24 Null0
-ip route 10.3.10.0/24 Null0
+mlag configuration
+   domain-id Rack-1
+   local-interface Vlan4094
+   peer-address 192.168.0.0
+   peer-address heartbeat 172.16.0.1 vrf mgmt
+   peer-link Port-Channel3
+   dual-primary detection delay 10 action errdisable all-interfaces
 !
 router bgp 64512
-   router-id 10.3.8.0
+   router-id 10.3.0.1
    maximum-paths 4 ecmp 64
    neighbor evpn peer group
    neighbor evpn remote-as 64512
-   neighbor evpn update-source Loopback100
+   neighbor evpn update-source Loopback0
    neighbor evpn password 7 87NCY2eLqQQ=
-   neighbor evpn send-community extended
+   neighbor evpn send-community standard extended
    neighbor underlay peer group
    neighbor underlay remote-as 64512
-   neighbor underlay bfd
    neighbor underlay password 7 ftDxwZDN4HE=
-   neighbor 10.2.1.0 peer group evpn
-   neighbor 10.2.1.0 description Spine_0
-   neighbor 10.2.2.5 peer group underlay
-   neighbor 10.2.2.5 description Spine_0
-   neighbor 10.2.5.0 peer group evpn
-   neighbor 10.2.5.0 description Spine_1
-   neighbor 10.2.6.5 peer group underlay
-   neighbor 10.2.6.5 description Spine_1
+   neighbor 10.2.0.0 peer group evpn
+   neighbor 10.2.0.0 description Over_Spine_0
+   neighbor 10.2.2.3 peer group underlay
+   neighbor 10.2.2.3 description Under_Spine_0
+   neighbor 10.2.4.0 peer group evpn
+   neighbor 10.2.4.0 description Over_Spine_1
+   neighbor 10.2.6.3 peer group underlay
+   neighbor 10.2.6.3 description Under_Spine_0
+   neighbor 10.3.0.128 peer group underlay
+   neighbor 10.3.0.128 description Under_Leaf-0_1
    !
    vlan 10
-      rd 10.3.8.0:10
+      rd 10.3.1.0:10
       route-target both 64512:10010
-      redistribute learned
-   !
-   vlan 30
-      rd 10.3.8.0:30
-      route-target both 64512:10030
       redistribute learned
    !
    address-family evpn
       neighbor evpn activate
    !
    address-family ipv4
-      network 10.3.9.0/24
-   !
-   vrf L3VPN
-      rd 10.3.8.0:10000
-      route-target import evpn 64512:10000
-      route-target export evpn 64512:10000
-      redistribute connected
+      network 10.3.0.1/32
+      network 10.3.0.128/31
+      network 10.3.1.0/32
 !
 end
+
 ```
-### Проверка работы протокола BGP
 
-1. Проверим, поднялись ли соедские отношения на примере Spine_0
+ Настройка [Leaf-1_0](Leaf-1_0.cfg) и [Leaf-1_1](Leaf-1_1.cfg) аналогична двум предыдущим Leaf
+
+### Проверка работы MLAG
+1. Проверим, видят ли друг друга Leaf ли соедские отношения на примере Leaf-0_0
 ````
-Spine_0#show bgp summary
-BGP summary information for VRF default
-Router identifier 10.2.0.0, local AS number 64512
-Neighbor          AS Session State AFI/SAFI                AFI/SAFI State   NLRI Rcd   NLRI Acc
--------- ----------- ------------- ----------------------- -------------- ---------- ----------
-10.2.2.0       64512 Established   IPv4 Unicast            Negotiated              1          1
-10.2.2.2       64512 Established   IPv4 Unicast            Negotiated              1          1
-10.2.2.4       64512 Established   IPv4 Unicast            Negotiated              1          1
-10.3.1.0       64512 Established   IPv4 Unicast            Negotiated              1          1
-10.3.1.0       64512 Established   L2VPN EVPN              Negotiated              2          2
-10.3.5.0       64512 Established   IPv4 Unicast            Negotiated              1          1
-10.3.5.0       64512 Established   L2VPN EVPN              Negotiated              1          1
-10.3.9.0       64512 Established   IPv4 Unicast            Negotiated              1          1
-10.3.9.0       64512 Established   L2VPN EVPN              Negotiated              3          3
-
-
+Leaf-0_0#show mlag
+MLAG Configuration:              
+domain-id                          :              Rack-1
+local-interface                    :            Vlan4094
+peer-address                       :         192.168.0.1
+peer-link                          :       Port-Channel3
+hb-peer-address                    :          172.16.0.2
+hb-peer-vrf                        :                mgmt
+peer-config                        :          consistent
+                                                       
+MLAG Status:                     
+state                              :              Active
+negotiation status                 :           Connected
+peer-link status                   :                  Up
+local-int status                   :                  Up
+system-id                          :   52:00:00:03:37:66
+dual-primary detection             :          Configured
+dual-primary interface errdisabled :               False
+                                                       
+MLAG Ports:                      
+Disabled                           :                   0
+Configured                         :                   0
+Inactive                           :                   0
+Active-partial                     :                   0
+Active-full                        :                   1
         
 ````
-Как видим, соседство в состоянии Established для всех 3х Leaf. Более того, мы видит по 3 сессии для каждого Leaf. По одной сессия с AFI/SAFI IPV4 для underlay и overlay. И одна сессия для передачи L2VPN AFI/SAFI
+Как видим, состояние MLAG активно и пиры видят друг друга
 
-2. Взглянем на таблицу маршрутизации Spine_0 для EVPN
-````
-Spine_0#show bgp evpn route-type mac-ip
-BGP routing table information for VRF default
-Router identifier 10.2.0.0, local AS number 64512
-Route status codes: * - valid, > - active, S - Stale, E - ECMP head, e - ECMP
-                    c - Contributing to ECMP, % - Pending BGP convergence
-Origin codes: i - IGP, e - EGP, ? - incomplete
-AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
-
-          Network                Next Hop              Metric  LocPref Weight  Path
- * >      RD: 10.3.0.0:10 mac-ip 0050.7966.6806
-                                 10.3.1.0              -       100     0       i
- * >      RD: 10.3.0.0:10 mac-ip 0050.7966.6806 192.168.1.1
-                                 10.3.1.0              -       100     0       i
- * >      RD: 10.3.4.0:20 mac-ip 0050.7966.6807
-                                 10.3.5.0              -       100     0       i
- * >      RD: 10.3.4.0:20 mac-ip 0050.7966.6807 192.168.2.2
-                                 10.3.5.0              -       100     0       i
- * >      RD: 10.3.8.0:10 mac-ip 0050.7966.6808
-                                 10.3.9.0              -       100     0       i
- * >      RD: 10.3.8.0:10 mac-ip 0050.7966.6808 192.168.1.3
-                                 10.3.9.0              -       100     0       i
- * >      RD: 10.3.8.0:30 mac-ip 0050.7966.6809
-                                 10.3.9.0              -       100     0       i
- * >      RD: 10.3.8.0:30 mac-ip 0050.7966.6809 192.168.3.4
-                                 10.3.9.0              -       100     0       i
-
-Spine_0#show bgp evpn route-type imet 
-BGP routing table information for VRF default
-Router identifier 10.2.0.0, local AS number 64512
-Route status codes: * - valid, > - active, S - Stale, E - ECMP head, e - ECMP
-                    c - Contributing to ECMP, % - Pending BGP convergence
-Origin codes: i - IGP, e - EGP, ? - incomplete
-AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
-
-          Network                Next Hop              Metric  LocPref Weight  Path
- * >      RD: 10.3.0.0:10 imet 10.3.1.0
-                                 10.3.1.0              -       100     0       i
- * >      RD: 10.3.4.0:20 imet 10.3.5.0
-                                 10.3.5.0              -       100     0       i
- * >      RD: 10.3.8.0:10 imet 10.3.9.0
-                                 10.3.9.0              -       100     0       i
- * >      RD: 10.3.8.0:20 imet 10.3.9.0
-                                 10.3.9.0              -       100     0       i
-Spine_0#
-
-
- `````
- Мы видим два типа маршрутов Type-3 (imet), чтобы знать куда отправлять BUM трафик, например ARP. А так же тип маршрутов Type-2 (mac-ip). Так как в данном случае мы передаем MAC адреса, то видим мак-адреса наших клиентов. RD позволяет их отличать друг от друга. Кроме того, в таблице появились маршруты типа mac - mac. Данные маршруты передают IP адреса конечных устройств и их маки c целью дальнейшей маршрутизации
-
-3. Что же у нас на уровне Leaf на примере Leaf_2?
-
-`````
-Leaf_2# show bgp summary 
-BGP summary information for VRF default
-Router identifier 10.3.8.0, local AS number 64512
-Neighbor          AS Session State AFI/SAFI                AFI/SAFI State   NLRI Rcd   NLRI Acc
--------- ----------- ------------- ----------------------- -------------- ---------- ----------
-10.2.1.0       64512 Established   IPv4 Unicast            Negotiated              4          4
-10.2.1.0       64512 Established   L2VPN EVPN              Negotiated              3          3
-10.2.2.5       64512 Established   IPv4 Unicast            Negotiated              4          4
-10.2.5.0       64512 Established   IPv4 Unicast            Negotiated              4          4
-10.2.5.0       64512 Established   L2VPN EVPN              Negotiated              3          3
-10.2.6.5       64512 Established   IPv4 Unicast            Negotiated              4          4
-
-`````
-
-Мы видим, что BGP сессии установлены с двумя Spine как для передачи IPv4 маршрутов так и для L2VPN информации.
-
-4. Маршруты на уровне Leaf не ссильно отличаются от уровня Spine. Но у нас еще появляются маршруты 5го типа - Route Type 5, для анонсирования подсетей
-````
-Leaf_2#show bgp evpn route-type ip-prefix ipv4
-BGP routing table information for VRF default
-Router identifier 10.3.8.0, local AS number 64512
-Route status codes: * - valid, > - active, S - Stale, E - ECMP head, e - ECMP
-                    c - Contributing to ECMP, % - Pending BGP convergence
-Origin codes: i - IGP, e - EGP, ? - incomplete
-AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
-
-          Network                Next Hop              Metric  LocPref Weight  Path
- * >Ec    RD: 10.3.0.0:10000 ip-prefix 192.168.1.0/24
-                                 10.3.1.0              -       100     0       i Or-ID: 10.3.0.0 C-LST: 10.2.4.0 
- *  ec    RD: 10.3.0.0:10000 ip-prefix 192.168.1.0/24
-                                 10.3.1.0              -       100     0       i Or-ID: 10.3.0.0 C-LST: 10.2.0.0 
- * >      RD: 10.3.8.0:10000 ip-prefix 192.168.1.0/24
-                                 -                     -       -       0       i
- * >Ec    RD: 10.3.4.0:10000 ip-prefix 192.168.2.0/24
-                                 10.3.5.0              -       100     0       i Or-ID: 10.3.4.0 C-LST: 10.2.0.0 
- *  ec    RD: 10.3.4.0:10000 ip-prefix 192.168.2.0/24                           
- 
- * >      RD: 10.3.8.0:10000 ip-prefix 192.168.3.0/24 -         -      0       i  Or-ID: 10.3.4.0 C-LST: 10.2.4.0
-                                                           
-````
-Что-же у нас с мак-таблицей
-
+2. Проверим MAC-таблицу на коммутатора
 
 ````
-Leaf_2#show mac address-table 
+Leaf-0_0#show mac address-table
+          Mac Address Table
+------------------------------------------------------------------
+
+Vlan    Mac Address       Type        Ports      Moves   Last Move
+----    -----------       ----        -----      -----   ---------
+   1    0000.8000.0000    STATIC      Po3
+  10    0000.8000.0000    STATIC      Cpu
+  10    0050.7966.6806    DYNAMIC     Po1        1       0:00:12 ago
+  10    0050.7966.6809    DYNAMIC     Vx1        1       0:00:10 ago
+4093    0000.8000.0000    STATIC      Cpu
+4094    0000.8000.0000    STATIC      Cpu
+Total Mac Addresses for this criterion: 8
+
+
+Leaf-0_1(config-if-Et9-10)#show mac address-table
           Mac Address Table
 ------------------------------------------------------------------
 
@@ -559,75 +516,112 @@ Vlan    Mac Address       Type        Ports      Moves   Last Move
 ----    -----------       ----        -----      -----   ---------
    1    0000.8000.0000    STATIC      Cpu
   10    0000.8000.0000    STATIC      Cpu
-  10    0050.7966.6806    DYNAMIC     Vx1        1       0:05:00 ago
-  10    0050.7966.6808    DYNAMIC     Et1        1       0:05:01 ago
-  30    0000.8000.0000    STATIC      Cpu
-  30    0050.7966.6809    DYNAMIC     Et2        1       0:04:54 ago
+  10    0050.7966.6806    DYNAMIC     Po1        1       0:00:06 ago
+  10    0050.7966.6809    DYNAMIC     Vx1        1       0:00:05 ago
+4093    0000.8000.0000    STATIC      Cpu
 4094    0000.8000.0000    STATIC      Cpu
-4094    5000.0003.3766    DYNAMIC     Vx1        1       1 day, 22:18:09 ago
-4094    5000.00d5.5dc0    DYNAMIC     Vx1        1       1 day, 22:07:05 ago
+Total Mac Addresses for this criterion: 6
 ````
-Как видим мы получам мак-адреса удаленных клиентов через интерфейс VxLAN 1 и локально через Eth порты а так же появились дополнительные мак-адреса в VLAN 4094. Это мак-адреса для работы маршрутизаци
 
-6. Маршруты в VRF
-````
-Leaf_2#show ip route vrf L3VPN
+Таблица на обоих MLAG соседах одинаковая
 
-...
-
-Gateway of last resort is not set
-
- B I      192.168.1.1/32 [200/0] via VTEP 10.3.1.0 VNI 10000 router-mac 50:00:00:d5:5d:c0 local-interface Vxlan1
- C        192.168.1.0/24 is directly connected, Vlan10
- B I      192.168.2.2/32 [200/0] via VTEP 10.3.5.0 VNI 10000 router-mac 50:00:00:03:37:66 local-interface Vxlan1
- B I      192.168.2.0/24 [200/0] via VTEP 10.3.5.0 VNI 10000 router-mac 50:00:00:03:37:66 local-interface Vxlan1
- C        192.168.3.0/24 is directly connected, Vlan30
+### Проверка работы BGP
+1. Проверим состояние BGP на примере Leaf-0_0
 
 ````
-Видим подсети, которые мы импортируем через RT
-
-6. Проверим состояние VxLAN итерфейса
-````
-Vxlan1 is up, line protocol is up (connected)
-  Hardware is Vxlan
-  Source interface is Loopback100 and is active with 10.3.9.0
-  Listening on UDP port 4789
-  Replication/Flood Mode is headend with Flood List Source: EVPN
-  Remote MAC learning via EVPN
-  VNI mapping to VLANs
-  Static VLAN to VNI mapping is 
-    [10, 10010]       [30, 10030]      
-  Dynamic VLAN to VNI mapping for 'evpn' is
-    [4094, 10000]    
-  Note: All Dynamic VLANs used by VCS are internal VLANs.
-        Use 'show vxlan vni' for details.
-  Static VRF to VNI mapping is 
-   [L3VPN, 10000]
-  Headend replication flood vtep list is:
-    10 10.3.1.0       
-  Shared Router MAC is 0000.0000.0000
+Leaf-0_0#show bgp summary 
+BGP summary information for VRF default
+Router identifier 10.3.0.0, local AS number 64512
+Neighbor            AS Session State AFI/SAFI                AFI/SAFI State   NLRI Rcd   NLRI Acc
+---------- ----------- ------------- ----------------------- -------------- ---------- ----------
+10.2.0.0         64512 Established   IPv4 Unicast            Negotiated              6          6
+10.2.0.0         64512 Established   L2VPN EVPN              Negotiated              1          1
+10.2.2.1         64512 Established   IPv4 Unicast            Negotiated              6          6
+10.2.4.0         64512 Established   IPv4 Unicast            Negotiated              6          6
+10.2.4.0         64512 Established   L2VPN EVPN              Negotiated              1          1
+10.2.6.1         64512 Established   IPv4 Unicast            Negotiated              6          6
+10.3.0.129       64512 Established   IPv4 Unicast            Negotiated              3          3
 
 ````
-Как мы видим по параметру "Headend replication flood vtep list is" VxLAN туннель у нас установлен с Leaf_0 для VLAN 10 а так же наличия промежуточного VNI для маршрутизации
 
-7. Ну, и проверим связность клиентов на примере Client_1
+
+ Мы видим, что соседства со Spine свичами и MLAG соседом установлено как для IPv4 так и для L2VPN AFI/SAFI
+
+
+2. Маршруты для L2VPN отличаются на обоих MLAG пирах. На втором пире, присутстуют mac-ip маршруты конечного хоста, полученные через MP-BGP
+
 ````
-Client_1> ping 192.168.2.2
+Leaf-0_0#show bgp evpn route-type imet 
+BGP routing table information for VRF default
+Router identifier 10.3.0.0, local AS number 64512
+Route status codes: * - valid, > - active, S - Stale, E - ECMP head, e - ECMP
+                    c - Contributing to ECMP, % - Pending BGP convergence
+Origin codes: i - IGP, e - EGP, ? - incomplete
+AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
 
-84 bytes from 192.168.2.2 icmp_seq=1 ttl=62 time=86.222 ms
-84 bytes from 192.168.2.2 icmp_seq=2 ttl=62 time=50.935 ms
-^C
-Client_1> ping 192.168.1.3
-
-84 bytes from 192.168.1.3 icmp_seq=1 ttl=64 time=157.572 ms
-84 bytes from 192.168.1.3 icmp_seq=2 ttl=64 time=69.884 ms
-^C
-Client_1> ping 192.168.3.4
-
-84 bytes from 192.168.3.4 icmp_seq=1 ttl=62 time=94.966 ms
-84 bytes from 192.168.3.4 icmp_seq=2 ttl=62 time=82.320 ms
-^C
+          Network                Next Hop              Metric  LocPref Weight  Path
+ * >      RD: 10.3.1.0:10 imet 10.3.1.0
+                                 -                     -       -       0       i
+ * >Ec    RD: 10.3.5.0:10 imet 10.3.5.0
+                                 10.3.5.0              -       100     0       i Or-ID: 10.3.4.1 C-LST: 10.2.4.0 
+ *  ec    RD: 10.3.5.0:10 imet 10.3.5.0
+                                 10.3.5.0              -       100     0       i Or-ID: 10.3.4.0 C-LST: 10.2.0.0 
 
 
+
+Leaf-0_1(config)#show bgp evpn route-type mac-ip
+BGP routing table information for VRF default
+Router identifier 10.3.0.1, local AS number 64512
+Route status codes: * - valid, > - active, S - Stale, E - ECMP head, e - ECMP
+                    c - Contributing to ECMP, % - Pending BGP convergence
+Origin codes: i - IGP, e - EGP, ? - incomplete
+AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
+
+          Network                Next Hop              Metric  LocPref Weight  Path
+ * >      RD: 10.3.1.0:10 mac-ip 0050.7966.6806
+                                 -                     -       -       0       i
+          RD: 10.3.1.0:10 mac-ip 0050.7966.6806
+                                 10.3.1.0              -       100     0       i Or-ID: 10.3.0.0 C-LST: 10.2.0.0 
+          RD: 10.3.1.0:10 mac-ip 0050.7966.6806
+                                 10.3.1.0              -       100     0       i Or-ID: 10.3.0.0 C-LST: 10.2.4.0 
+ * >Ec    RD: 10.3.5.0:10 mac-ip 0050.7966.6809
+                                 10.3.5.0              -       100     0       i Or-ID: 10.3.4.0 C-LST: 10.2.4.0 
+ *  ec    RD: 10.3.5.0:10 mac-ip 0050.7966.6809
+                                 10.3.5.0              -       100     0       i Or-ID: 10.3.4.0 C-LST: 10.2.0.0 
+````
+
+3. Ну, и проверим связность клиентов на примере Client_1 одновременно отключая различные линки
+
+````
+Client_1> ping 192.168.1.4 -c 9999
+
+84 bytes from 192.168.1.4 icmp_seq=1 ttl=64 time=164.316 ms
+84 bytes from 192.168.1.4 icmp_seq=2 ttl=64 time=260.320 ms
+192.168.1.4 icmp_seq=3 timeout
+192.168.1.4 icmp_seq=4 timeout
+192.168.1.4 icmp_seq=5 timeout
+84 bytes from 192.168.1.4 icmp_seq=6 ttl=64 time=303.208 ms
+84 bytes from 192.168.1.4 icmp_seq=7 ttl=64 time=146.779 ms
+84 bytes from 192.168.1.4 icmp_seq=8 ttl=64 time=369.266 ms
+84 bytes from 192.168.1.4 icmp_seq=9 ttl=64 time=182.319 ms
+84 bytes from 192.168.1.4 icmp_seq=10 ttl=64 time=145.042 ms
+84 bytes from 192.168.1.4 icmp_seq=11 ttl=64 time=314.286 ms
+84 bytes from 192.168.1.4 icmp_seq=12 ttl=64 time=419.650 ms
+84 bytes from 192.168.1.4 icmp_seq=13 ttl=64 time=301.741 ms
+84 bytes from 192.168.1.4 icmp_seq=14 ttl=64 time=206.088 ms
+84 bytes from 192.168.1.4 icmp_seq=15 ttl=64 time=947.955 ms
+84 bytes from 192.168.1.4 icmp_seq=16 ttl=64 time=217.366 ms
+84 bytes from 192.168.1.4 icmp_seq=17 ttl=64 time=406.866 ms
+84 bytes from 192.168.1.4 icmp_seq=18 ttl=64 time=176.750 ms
+84 bytes from 192.168.1.4 icmp_seq=19 ttl=64 time=140.207 ms
+84 bytes from 192.168.1.4 icmp_seq=20 ttl=64 time=391.621 ms
+84 bytes from 192.168.1.4 icmp_seq=21 ttl=64 time=341.675 ms
+84 bytes from 192.168.1.4 icmp_seq=22 ttl=64 time=505.117 ms
+192.168.1.4 icmp_seq=23 timeout
+84 bytes from 192.168.1.4 icmp_seq=24 ttl=64 time=246.518 ms
+84 bytes from 192.168.1.4 icmp_seq=25 ttl=64 time=190.895 ms
+84 bytes from 192.168.1.4 icmp_seq=26 ttl=64 time=212.601 ms
+84 bytes from 192.168.1.4 icmp_seq=27 ttl=64 time=270.879 ms
 VPCS> 
 ````
+как видим, связь нарушается не надолго, и трафик продолжает идти
