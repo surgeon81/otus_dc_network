@@ -436,24 +436,36 @@ Leaf_0#
 `````
  Мы видим два маршрута в каждом VRF: непосредственно адрес сети клиента, чей VRF находится на Leaf_0 а так же маршруты, полученные по BGP от Leaf_1
 
-3. Проверим связность клинетов
+3. Проверим связность клинетов на примере Client_10
 
 `````
-Leaf_2# show bgp summary 
-BGP summary information for VRF default
-Router identifier 10.3.8.0, local AS number 64512
-Neighbor          AS Session State AFI/SAFI                AFI/SAFI State   NLRI Rcd   NLRI Acc
--------- ----------- ------------- ----------------------- -------------- ---------- ----------
-10.2.1.0       64512 Established   IPv4 Unicast            Negotiated              4          4
-10.2.1.0       64512 Established   L2VPN EVPN              Negotiated              3          3
-10.2.2.5       64512 Established   IPv4 Unicast            Negotiated              4          4
-10.2.5.0       64512 Established   IPv4 Unicast            Negotiated              4          4
-10.2.5.0       64512 Established   L2VPN EVPN              Negotiated              3          3
-10.2.6.5       64512 Established   IPv4 Unicast            Negotiated              4          4
+Client_10> ping 192.168.30.1
+
+84 bytes from 192.168.30.1 icmp_seq=1 ttl=62 time=177.702 ms
+84 bytes from 192.168.30.1 icmp_seq=2 ttl=62 time=51.706 ms
+84 bytes from 192.168.30.1 icmp_seq=3 ttl=62 time=60.399 ms
+84 bytes from 192.168.30.1 icmp_seq=4 ttl=62 time=59.961 ms
+84 bytes from 192.168.30.1 icmp_seq=5 ttl=62 time=65.395 ms
+
+Client_10> ping 192.168.20.1
+
+*192.168.10.254 icmp_seq=1 ttl=64 time=16.948 ms (ICMP type:3, code:0, Destination network unreachable)
+*192.168.10.254 icmp_seq=2 ttl=64 time=12.179 ms (ICMP type:3, code:0, Destination network unreachable)
+*192.168.10.254 icmp_seq=3 ttl=64 time=9.198 ms (ICMP type:3, code:0, Destination network unreachable)
+*192.168.10.254 icmp_seq=4 ttl=64 time=11.462 ms (ICMP type:3, code:0, Destination network unreachable)
+*192.168.10.254 icmp_seq=5 ttl=64 time=11.869 ms (ICMP type:3, code:0, Destination network unreachable)
+
+Client_10> ping 192.168.40.1
+
+*192.168.10.254 icmp_seq=1 ttl=64 time=8.676 ms (ICMP type:3, code:0, Destination network unreachable)
+*192.168.10.254 icmp_seq=2 ttl=64 time=17.957 ms (ICMP type:3, code:0, Destination network unreachable)
+*192.168.10.254 icmp_seq=3 ttl=64 time=8.126 ms (ICMP type:3, code:0, Destination network unreachable)
+*192.168.10.254 icmp_seq=4 ttl=64 time=7.823 ms (ICMP type:3, code:0, Destination network unreachable)
+*192.168.10.254 icmp_seq=5 ttl=64 time=9.746 ms (ICMP type:3, code:0, Destination network unreachable)
 
 `````
 
-Мы видим, что BGP сессии установлены с двумя Spine как для передачи IPv4 маршрутов так и для L2VPN информации.
+Мы видим, что связность в пределах фабрики есть внтури одной организации и нет между.
 
 4. Маршруты на уровне Leaf не ссильно отличаются от уровня Spine. Но у нас еще появляются маршруты 5го типа - Route Type 5, для анонсирования подсетей
 ````
