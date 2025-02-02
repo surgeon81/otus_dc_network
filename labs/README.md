@@ -5,4 +5,6 @@
  - [Урок 8. Построение Underlay сети на базе BGP](lab08/)
  - [Урок 11. VxLAN. EVPN L2](lab011/)
  - [Урок 12. VxLAN. EVPN L3](lab012/)
+ - [Урок 14. VxLAN. MLAG](lab014/)
+ - [Урок 15. VxLAN. Routing](lab015/)
 
