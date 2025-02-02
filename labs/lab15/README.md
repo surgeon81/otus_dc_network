@@ -25,8 +25,9 @@
 14. Для снижения ARP запросов используется anycast gateway c виртуальным MAC
 15. Для большей наглядности и уменьшения нагрузки анонсировавание MAC-IP типов маршрутов не реализовано.
 16. В качестве протокола маршрутизации между внешним ротуром (Router) испльзуется OSPF
-17. Каждый клиент а так же линки между Leaf_2 м Router находzтся в своем отдельном VLAN и VRF
-18. Клиенты 10 и 30 относятся к одной органиции а Клиенты 20 и 40 к другой. Клиенты одной организации имеют доступ друг другу в пределах фабрики. Связь между организациями осуществляется только за пределами фабрики через Router
+17. С целью экономии tcam, в фабрику со стороны Router будут анонсироваться только маршрурт по умолчанию
+18. Каждый клиент а так же линки между Leaf_2 м Router находzтся в своем отдельном VLAN и VRF
+19. Клиенты 10 и 30 относятся к одной органиции а Клиенты 20 и 40 к другой. Клиенты одной организации имеют доступ друг другу в пределах фабрики. Связь между организациями осуществляется только за пределами фабрики через Router
 
 
 ### Адреса устройств
@@ -271,8 +272,6 @@ end
  #### [Настройка Leaf_2](Leaf_2.cfg)
 
 ```
-vlan 100,200
-!
 vrf instance VLAN100
 !
 vrf instance VLAN200
@@ -303,6 +302,9 @@ ip routing vrf VLAN200
 ip route 10.3.9.0/24 Null0
 ip route 10.3.10.0/24 Null0
 !
+route-map Default_Router_RM permit 10
+   match tag 100200
+!
 router bgp 64512
    router-id 10.3.8.0
    maximum-paths 4 ecmp 64
@@ -329,21 +331,19 @@ router bgp 64512
    address-family ipv4
       network 10.3.9.0/24
    !
+   vrf VLALAN100
+   !
    vrf VLAN100
       rd 10.3.8.0:100
       route-target import evpn 64512:1030
       route-target export evpn 64512:1030
-      redistribute connected
-      redistribute ospf
-      redistribute ospf match external
+      redistribute ospf match external route-map Default_Router_RM
    !
    vrf VLAN200
-      rd 10.3.8.0:10020
+      rd 10.3.8.0:200
       route-target import evpn 64512:2040
       route-target export evpn 64512:2040
-      redistribute connected
-      redistribute ospf
-      redistribute ospf match external
+      redistribute ospf match external route-map Default_Router_RM
 !
 router ospf 100 vrf VLAN100
    router-id 192.168.100.254
@@ -358,9 +358,43 @@ router ospf 200 vrf VLAN200
    max-lsa 12000
 !
 end
-
 ```
-### Проверка работоспособности маршрутизации между протокола BGP
+ #### [Настройка Router](Router.cfg)
+ ```
+vlan 100,200
+!
+interface Ethernet1
+   switchport trunk allowed vlan 100,200
+   switchport mode trunk
+!
+interface Vlan100
+   ip address 192.168.100.1/24
+!
+interface Vlan200
+   ip address 192.168.200.1/24
+!
+ip access-list standard Default_route
+   10 permit any
+!
+ip routing
+!
+ip route 0.0.0.0/0 Null0
+!
+route-map Default_route_RM permit 10
+   match ip address access-list Default_route
+   set tag 100200
+!
+router ospf 1
+   network 192.168.100.1/32 area 0.0.0.0
+   network 192.168.200.1/32 area 0.0.0.0
+   max-lsa 12000
+   default-information originate always route-map Default_route_RM
+!
+end
+
+ ```
+
+### Проверка работоспособности EVPN 
 
 1. Для большей наглядности, на время отключим Router 1 и проверим наличие маршрутов EVPN а так же связности клиентов на примере Leaf_0
 ````
@@ -467,111 +501,114 @@ Client_10> ping 192.168.40.1
 
 Мы видим, что связность в пределах фабрики есть внтури одной организации и нет между.
 
-4. Маршруты на уровне Leaf не ссильно отличаются от уровня Spine. Но у нас еще появляются маршруты 5го типа - Route Type 5, для анонсирования подсетей
+4. Включим Router и проверим обновленную таблицу evpn маршрутизации
 ````
-Leaf_2#show bgp evpn route-type ip-prefix ipv4
+Leaf_0#show bgp evpn 
 BGP routing table information for VRF default
-Router identifier 10.3.8.0, local AS number 64512
+Router identifier 10.3.0.0, local AS number 64512
 Route status codes: * - valid, > - active, S - Stale, E - ECMP head, e - ECMP
                     c - Contributing to ECMP, % - Pending BGP convergence
 Origin codes: i - IGP, e - EGP, ? - incomplete
 AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
 
           Network                Next Hop              Metric  LocPref Weight  Path
- * >Ec    RD: 10.3.0.0:10000 ip-prefix 192.168.1.0/24
-                                 10.3.1.0              -       100     0       i Or-ID: 10.3.0.0 C-LST: 10.2.4.0 
- *  ec    RD: 10.3.0.0:10000 ip-prefix 192.168.1.0/24
-                                 10.3.1.0              -       100     0       i Or-ID: 10.3.0.0 C-LST: 10.2.0.0 
- * >      RD: 10.3.8.0:10000 ip-prefix 192.168.1.0/24
+ * >Ec    RD: 10.3.8.0:100 ip-prefix 0.0.0.0/0
+                                 10.3.9.0              -       100     0       i Or-ID: 10.3.8.0 C-LST: 10.2.4.0 
+ *  ec    RD: 10.3.8.0:100 ip-prefix 0.0.0.0/0
+                                 10.3.9.0              -       100     0       i Or-ID: 10.3.8.0 C-LST: 10.2.0.0 
+ * >Ec    RD: 10.3.8.0:200 ip-prefix 0.0.0.0/0
+                                 10.3.9.0              -       100     0       i Or-ID: 10.3.8.0 C-LST: 10.2.4.0 
+ *  ec    RD: 10.3.8.0:200 ip-prefix 0.0.0.0/0
+                                 10.3.9.0              -       100     0       i Or-ID: 10.3.8.0 C-LST: 10.2.0.0 
+ * >      RD: 10.3.0.0:10 ip-prefix 192.168.10.0/24
                                  -                     -       -       0       i
- * >Ec    RD: 10.3.4.0:10000 ip-prefix 192.168.2.0/24
+ * >      RD: 10.3.0.0:20 ip-prefix 192.168.20.0/24
+                                 -                     -       -       0       i
+ * >Ec    RD: 10.3.4.0:30 ip-prefix 192.168.30.0/24
                                  10.3.5.0              -       100     0       i Or-ID: 10.3.4.0 C-LST: 10.2.0.0 
- *  ec    RD: 10.3.4.0:10000 ip-prefix 192.168.2.0/24                           
- 
- * >      RD: 10.3.8.0:10000 ip-prefix 192.168.3.0/24 -         -      0       i  Or-ID: 10.3.4.0 C-LST: 10.2.4.0
-                                                           
+ *  ec    RD: 10.3.4.0:30 ip-prefix 192.168.30.0/24
+                                 10.3.5.0              -       100     0       i Or-ID: 10.3.4.0 C-LST: 10.2.4.0 
+ * >Ec    RD: 10.3.4.0:40 ip-prefix 192.168.40.0/24
+                                 10.3.5.0              -       100     0       i Or-ID: 10.3.4.0 C-LST: 10.2.4.0 
+ *  ec    RD: 10.3.4.0:40 ip-prefix 192.168.40.0/24
+                                 10.3.5.0              -       100     0       i Or-ID: 10.3.4.0 C-LST: 10.2.0.0 
+
 ````
-Что-же у нас с мак-таблицей
+Что-же у нас с таблицей маршрутизации клиентский vrf?
 
 
 ````
-Leaf_2#show mac address-table 
-          Mac Address Table
-------------------------------------------------------------------
+Leaf_0#show ip route vrf Cust_10
 
-Vlan    Mac Address       Type        Ports      Moves   Last Move
-----    -----------       ----        -----      -----   ---------
-   1    0000.8000.0000    STATIC      Cpu
-  10    0000.8000.0000    STATIC      Cpu
-  10    0050.7966.6806    DYNAMIC     Vx1        1       0:05:00 ago
-  10    0050.7966.6808    DYNAMIC     Et1        1       0:05:01 ago
-  30    0000.8000.0000    STATIC      Cpu
-  30    0050.7966.6809    DYNAMIC     Et2        1       0:04:54 ago
-4094    0000.8000.0000    STATIC      Cpu
-4094    5000.0003.3766    DYNAMIC     Vx1        1       1 day, 22:18:09 ago
-4094    5000.00d5.5dc0    DYNAMIC     Vx1        1       1 day, 22:07:05 ago
-````
-Как видим мы получам мак-адреса удаленных клиентов через интерфейс VxLAN 1 и локально через Eth порты а так же появились дополнительные мак-адреса в VLAN 4094. Это мак-адреса для работы маршрутизаци
+VRF: Cust_10
+Codes: C - connected, S - static, K - kernel, 
+       O - OSPF, IA - OSPF inter area, E1 - OSPF external type 1,
+       E2 - OSPF external type 2, N1 - OSPF NSSA external type 1,
+       N2 - OSPF NSSA external type2, B - Other BGP Routes,
+       B I - iBGP, B E - eBGP, R - RIP, I L1 - IS-IS level 1,
+       I L2 - IS-IS level 2, O3 - OSPFv3, A B - BGP Aggregate,
+       A O - OSPF Summary, NG - Nexthop Group Static Route,
+       V - VXLAN Control Service, M - Martian,
+       DH - DHCP client installed default route,
+       DP - Dynamic Policy Route, L - VRF Leaked,
+       G  - gRIBI, RC - Route Cache Route
 
-6. Маршруты в VRF
+Gateway of last resort:
+ B I      0.0.0.0/0 [200/0] via VTEP 10.3.9.0 VNI 100 router-mac 50:00:00:15:f4:e8 local-interface Vxlan1
+
+ C        192.168.10.0/24 is directly connected, Vlan10
+ B I      192.168.30.0/24 [200/0] via VTEP 10.3.5.0 VNI 30 router-mac 50:00:00:03:37:66 local-interface Vxlan1
+
+Leaf_0#show ip route vrf Cust_20
+
+VRF: Cust_20
+Codes: C - connected, S - static, K - kernel, 
+       O - OSPF, IA - OSPF inter area, E1 - OSPF external type 1,
+       E2 - OSPF external type 2, N1 - OSPF NSSA external type 1,
+       N2 - OSPF NSSA external type2, B - Other BGP Routes,
+       B I - iBGP, B E - eBGP, R - RIP, I L1 - IS-IS level 1,
+       I L2 - IS-IS level 2, O3 - OSPFv3, A B - BGP Aggregate,
+       A O - OSPF Summary, NG - Nexthop Group Static Route,
+       V - VXLAN Control Service, M - Martian,
+       DH - DHCP client installed default route,
+       DP - Dynamic Policy Route, L - VRF Leaked,
+       G  - gRIBI, RC - Route Cache Route
+
+Gateway of last resort:
+ B I      0.0.0.0/0 [200/0] via VTEP 10.3.9.0 VNI 200 router-mac 50:00:00:15:f4:e8 local-interface Vxlan1
+
+ C        192.168.20.0/24 is directly connected, Vlan20
+ B I      192.168.40.0/24 [200/0] via VTEP 10.3.5.0 VNI 40 router-mac 50:00:00:03:37:66 local-interface Vxlan1
 ````
-Leaf_2#show ip route vrf L3VPN
+Как видим мы получам дополнительный Route type 5 - 0.0.0.0/0. Благодаря route-map для редистрибьюции из OSPF в BGP мы не видим префиков сетей между Leaf_2 и Router, а так же не видим реанонс клиентских префиксов обратно в фабрику через OSPF.
+Таблица маршрутизации VRF так же ограничена маршрутом по умолчанию с префиксами одной организации
+
+6. ~~Попробуем теперь с этой всей фигней взлететь~~ Проверим связность
+````
+Client_10> ping 192.168.20.1
+
+84 bytes from 192.168.20.1 icmp_seq=1 ttl=59 time=170.600 ms
+84 bytes from 192.168.20.1 icmp_seq=2 ttl=59 time=134.526 ms
+84 bytes from 192.168.20.1 icmp_seq=3 ttl=59 time=124.657 ms
+84 bytes from 192.168.20.1 icmp_seq=4 ttl=59 time=211.685 ms
+84 bytes from 192.168.20.1 icmp_seq=5 ttl=59 time=129.843 ms
+
+Client_10> ping 192.168.30.1
+
+84 bytes from 192.168.30.1 icmp_seq=1 ttl=62 time=154.360 ms
+84 bytes from 192.168.30.1 icmp_seq=2 ttl=62 time=54.076 ms
+84 bytes from 192.168.30.1 icmp_seq=3 ttl=62 time=48.118 ms
+84 bytes from 192.168.30.1 icmp_seq=4 ttl=62 time=77.460 ms
+84 bytes from 192.168.30.1 icmp_seq=5 ttl=62 time=69.877 ms
+
+Client_10> ping 192.168.40.1
+
+84 bytes from 192.168.40.1 icmp_seq=1 ttl=59 time=178.442 ms
+84 bytes from 192.168.40.1 icmp_seq=2 ttl=59 time=150.568 ms
+84 bytes from 192.168.40.1 icmp_seq=3 ttl=59 time=245.449 ms
+84 bytes from 192.168.40.1 icmp_seq=4 ttl=59 time=141.128 ms
+84 bytes from 192.168.40.1 icmp_seq=5 ttl=59 time=154.207 ms
+
 
 ...
 
-Gateway of last resort is not set
-
- B I      192.168.1.1/32 [200/0] via VTEP 10.3.1.0 VNI 10000 router-mac 50:00:00:d5:5d:c0 local-interface Vxlan1
- C        192.168.1.0/24 is directly connected, Vlan10
- B I      192.168.2.2/32 [200/0] via VTEP 10.3.5.0 VNI 10000 router-mac 50:00:00:03:37:66 local-interface Vxlan1
- B I      192.168.2.0/24 [200/0] via VTEP 10.3.5.0 VNI 10000 router-mac 50:00:00:03:37:66 local-interface Vxlan1
- C        192.168.3.0/24 is directly connected, Vlan30
-
-````
-Видим подсети, которые мы импортируем через RT
-
-6. Проверим состояние VxLAN итерфейса
-````
-Vxlan1 is up, line protocol is up (connected)
-  Hardware is Vxlan
-  Source interface is Loopback100 and is active with 10.3.9.0
-  Listening on UDP port 4789
-  Replication/Flood Mode is headend with Flood List Source: EVPN
-  Remote MAC learning via EVPN
-  VNI mapping to VLANs
-  Static VLAN to VNI mapping is 
-    [10, 10010]       [30, 10030]      
-  Dynamic VLAN to VNI mapping for 'evpn' is
-    [4094, 10000]    
-  Note: All Dynamic VLANs used by VCS are internal VLANs.
-        Use 'show vxlan vni' for details.
-  Static VRF to VNI mapping is 
-   [L3VPN, 10000]
-  Headend replication flood vtep list is:
-    10 10.3.1.0       
-  Shared Router MAC is 0000.0000.0000
-
-````
-Как мы видим по параметру "Headend replication flood vtep list is" VxLAN туннель у нас установлен с Leaf_0 для VLAN 10 а так же наличия промежуточного VNI для маршрутизации
-
-7. Ну, и проверим связность клиентов на примере Client_1
-````
-Client_1> ping 192.168.2.2
-
-84 bytes from 192.168.2.2 icmp_seq=1 ttl=62 time=86.222 ms
-84 bytes from 192.168.2.2 icmp_seq=2 ttl=62 time=50.935 ms
-^C
-Client_1> ping 192.168.1.3
-
-84 bytes from 192.168.1.3 icmp_seq=1 ttl=64 time=157.572 ms
-84 bytes from 192.168.1.3 icmp_seq=2 ttl=64 time=69.884 ms
-^C
-Client_1> ping 192.168.3.4
-
-84 bytes from 192.168.3.4 icmp_seq=1 ttl=62 time=94.966 ms
-84 bytes from 192.168.3.4 icmp_seq=2 ttl=62 time=82.320 ms
-^C
-
-
-VPCS> 
-````
