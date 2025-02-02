@@ -608,7 +608,5 @@ Client_10> ping 192.168.40.1
 84 bytes from 192.168.40.1 icmp_seq=3 ttl=59 time=245.449 ms
 84 bytes from 192.168.40.1 icmp_seq=4 ttl=59 time=141.128 ms
 84 bytes from 192.168.40.1 icmp_seq=5 ttl=59 time=154.207 ms
-
-
 ...
 
