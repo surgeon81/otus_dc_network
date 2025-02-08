@@ -6,7 +6,7 @@
 
 
 ### Топология сети
-![BGP-Routing](/labs/lab15/image.png)
+![BGP-Routing](/labs/Курсовая_работа/image.png)
 
 ### Описание топологии
 1. Для Overlay и Underlay сети используется протокол iBGP
