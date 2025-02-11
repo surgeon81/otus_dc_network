@@ -10,6 +10,7 @@
 4. Изолировать между собой трафики сети управления, DMZ и внутренних сервисов.
 5. Изолировать L2 взаимодействие между стойками.
 6. Использовать возможности Active-Active для выхода трафика из фабрики через кластер фаерволов
+7. Для предовращения нарушения сервисов при падении всех линков от Leaf до Spine коммутаторов использована технология Arista "link tracking group". Данный функционал позволяет переводить необходимые интерфейсы в "errdisable" состояние при падении зависимых портов. Таким образом проблемный коммутатор полностью выводится из MLAG группы
 
 
 ### Ограничения среды
@@ -117,8 +118,60 @@ IP|маска|Интерфейс|Назначение
 
 
 ### Подготовка стенда
-#### Конфигурация Underaly
+[Конфигурация Spine_0](/labs/Курсовая_работа/Spine_0.cfg)
 
+[Конфигурация Spine_1](/labs/Курсовая_работа/Spine_1.cfg)
+
+[Конфигурация Leaf_00](/labs/Курсовая_работа/Leaf_00.cfg)
+
+[Конфигурация Leaf_01](/labs/Курсовая_работа/Leaf_01.cfg)
+
+[Конфигурация Leaf_10](/labs/Курсовая_работа/Leaf_10.cfg)
+
+[Конфигурация Leaf_11](/labs/Курсовая_работа/Leaf_11.cfg)
+
+
+#### Конфигурация Underaly уровня Spine
+
+```
+router ospf 1
+   router-id <Loopback0>
+   passive-interface default
+   no passive-interface <ports_to_leaf>
+!
+interface Loopback0
+   ip ospf area 0.0.0.0
+!
+interface Loopback100
+   ip ospf area 0.0.0.0
+!
+interface <port_to_leaf>
+   ip ospf area 0.0.0.0
+!
+
+```
+#### Конфигурация Underaly уровня Leaf
+```
+router ospf 1
+   router-id <Loopback0>
+   passive-interface default
+   no passive-interface <ports_to_spines>
+   area <Loopback100> nssa no-summary
+   area <Loopback100> range <area subnet>
+   max-lsa 12000
+!
+interface Loopback0
+   ip ospf area <Loopback100>
+!
+interface Loopback100
+   ip ospf area <Loopback100>
+!
+interface <port_to_spine>
+   ip ospf area 0.0.0.0
+!
+
+
+```
 Пропустим уровень Spine, так как там ничего особенного нет и конфигурация не отличается от других лабораторных
 ###### [Конфигурация Spine_0](Spine_0.cfg)
 ###### [Конфигурация Spine_1](Spine_1.cfg)
