@@ -498,7 +498,7 @@ Vxlan1 is up, line protocol is up (connected)
     30 10.2.5.0        10.2.1.0       
   MLAG Shared Router MAC is 0000.0000.0000
 
-  
+
 Leaf-00#show vxlan address-table 
           Vxlan Mac Address Table
 ----------------------------------------------------------------------
@@ -512,5 +512,52 @@ VLAN  Mac Address     Type      Prt  VTEP             Moves   Last Move
   30  0000.5e00.011e  EVPN      Vx1  10.2.1.0         17      16:32:44 ago
 Total Remote Mac Addresses for this criterion: 5
 Leaf-00#
+
+```
+
+##### Проверим связность серверов и файерволов
+```
+Node-0-00#ping 172.16.10.254
+PING 172.16.10.254 (172.16.10.254) 72(100) bytes of data.
+80 bytes from 172.16.10.254: icmp_seq=1 ttl=64 time=1294 ms
+80 bytes from 172.16.10.254: icmp_seq=2 ttl=64 time=1436 ms
+80 bytes from 172.16.10.254: icmp_seq=3 ttl=64 time=1504 ms
+80 bytes from 172.16.10.254: icmp_seq=4 ttl=64 time=1609 ms
+80 bytes from 172.16.10.254: icmp_seq=5 ttl=64 time=1872 ms
+
+--- 172.16.10.254 ping statistics ---
+5 packets transmitted, 5 received, 0% packet loss, time 88ms
+rtt min/avg/max/mdev = 1294.164/1543.562/1872.538/193.745 ms, pipe 5, ipg/ewma 22.068/1433.054 ms
+
+
+Node-0-00#ping 172.16.10.2
+PING 172.16.10.2 (172.16.10.2) 72(100) bytes of data.
+80 bytes from 172.16.10.2: icmp_seq=1 ttl=64 time=1105 ms
+80 bytes from 172.16.10.2: icmp_seq=2 ttl=64 time=1111 ms
+80 bytes from 172.16.10.2: icmp_seq=3 ttl=64 time=1206 ms
+80 bytes from 172.16.10.2: icmp_seq=4 ttl=64 time=1326 ms
+80 bytes from 172.16.10.2: icmp_seq=5 ttl=64 time=1767 ms
+
+--- 172.16.10.2 ping statistics ---
+5 packets transmitted, 5 received, 0% packet loss, time 100ms
+rtt min/avg/max/mdev = 1105.607/1303.458/1767.329/245.380 ms, pipe 5, ipg/ewma 25.063/1222.613 ms
+
+```
+##### Проверим отсутсвие связности между стойками в VLAN 20 и 30
+```
+Node-0-00#ping 172.16.20.2
+PING 172.16.20.2 (172.16.20.2) 72(100) bytes of data.
+
+--- 172.16.20.2 ping statistics ---
+5 packets transmitted, 0 received, 100% packet loss, time 67ms
+
+
+
+Node-0-00#ping 172.16.30.2
+PING 172.16.30.2 (172.16.30.2) 72(100) bytes of data.
+
+--- 172.16.30.2 ping statistics ---
+5 packets transmitted, 0 received, 100% packet loss, time 89ms
+
 
 ```
