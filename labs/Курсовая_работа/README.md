@@ -317,3 +317,200 @@ Neighbor Status Codes: m - Under maintenance
   Over_Spine_1             10.2.4.0 4 64512           3649      3235    0    0 18:48:40 Estab   12     12
 
 ```
+##### Таблица маршрутизации Underlay на примере Leaf_00
+```
+Leaf-00#show bgp evpn 
+BGP routing table information for VRF default
+Router identifier 10.3.0.0, local AS number 64512
+Route status codes: * - valid, > - active, S - Stale, E - ECMP head, e - ECMP
+                    c - Contributing to ECMP, % - Pending BGP convergence
+Origin codes: i - IGP, e - EGP, ? - incomplete
+AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
+
+          Network                Next Hop              Metric  LocPref Weight  Path
+ * >      RD: 10.2.1.0:10010 mac-ip 0000.5e00.010a
+                                 10.2.1.0              -       100     0       i
+ * >      RD: 10.2.5.0:10010 mac-ip 0000.5e00.010a
+                                 10.2.5.0              -       100     0       i
+ * >      RD: 10.2.1.0:10020 mac-ip 0000.5e00.0114
+                                 10.2.1.0              -       100     0       i
+ * >      RD: 10.2.5.0:10020 mac-ip 0000.5e00.0114
+                                 10.2.5.0              -       100     0       i
+ * >      RD: 10.2.1.0:10030 mac-ip 0000.5e00.011e
+                                 10.2.1.0              -       100     0       i
+ * >      RD: 10.2.5.0:10030 mac-ip 0000.5e00.011e
+                                 10.2.5.0              -       100     0       i
+ * >      RD: 10.3.1.0:10010 mac-ip 5000.0072.8b31
+                                 -                     -       -       0       i
+ * >      RD: 10.3.1.0:10020 mac-ip 5000.0072.8b31
+                                 -                     -       -       0       i
+ * >Ec    RD: 10.3.5.0:10010 mac-ip 5000.00af.d3f6
+                                 10.3.5.0              -       100     0       i Or-ID: 10.3.4.0 C-LST: 10.2.0.0 
+ *  ec    RD: 10.3.5.0:10010 mac-ip 5000.00af.d3f6
+                                 10.3.5.0              -       100     0       i Or-ID: 10.3.4.0 C-LST: 10.2.4.0 
+ * >Ec    RD: 10.3.5.0:10020 mac-ip 5000.00af.d3f6
+                                 10.3.5.0              -       100     0       i Or-ID: 10.3.4.1 C-LST: 10.2.0.0 
+ *  ec    RD: 10.3.5.0:10020 mac-ip 5000.00af.d3f6
+                                 10.3.5.0              -       100     0       i Or-ID: 10.3.4.1 C-LST: 10.2.4.0 
+ * >Ec    RD: 10.3.5.0:10030 mac-ip 5000.00af.d3f6
+                                 10.3.5.0              -       100     0       i Or-ID: 10.3.4.1 C-LST: 10.2.0.0 
+ *  ec    RD: 10.3.5.0:10030 mac-ip 5000.00af.d3f6
+                                 10.3.5.0              -       100     0       i Or-ID: 10.3.4.1 C-LST: 10.2.4.0 
+ * >      RD: 10.2.1.0:10010 imet 10.2.1.0
+                                 10.2.1.0              -       100     0       i
+ * >      RD: 10.2.1.0:10020 imet 10.2.1.0
+                                 10.2.1.0              -       100     0       i
+ * >      RD: 10.2.1.0:10030 imet 10.2.1.0
+                                 10.2.1.0              -       100     0       i
+ * >      RD: 10.2.5.0:10010 imet 10.2.5.0
+                                 10.2.5.0              -       100     0       i
+ * >      RD: 10.2.5.0:10020 imet 10.2.5.0
+                                 10.2.5.0              -       100     0       i
+ * >      RD: 10.2.5.0:10030 imet 10.2.5.0
+                                 10.2.5.0              -       100     0       i
+ * >      RD: 10.3.1.0:10010 imet 10.3.1.0
+                                 -                     -       -       0       i
+ * >      RD: 10.3.1.0:10020 imet 10.3.1.0
+                                 -                     -       -       0       i
+ * >      RD: 10.3.1.0:10030 imet 10.3.1.0
+                                 -                     -       -       0       i
+ * >Ec    RD: 10.3.5.0:10010 imet 10.3.5.0
+                                 10.3.5.0              -       100     0       i Or-ID: 10.3.4.0 C-LST: 10.2.0.0 
+ *  ec    RD: 10.3.5.0:10010 imet 10.3.5.0
+                                 10.3.5.0              -       100     0       i Or-ID: 10.3.4.1 C-LST: 10.2.4.0 
+ * >Ec    RD: 10.3.5.0:10020 imet 10.3.5.0
+                                 10.3.5.0              -       100     0       i Or-ID: 10.3.4.0 C-LST: 10.2.0.0 
+ *  ec    RD: 10.3.5.0:10020 imet 10.3.5.0
+                                 10.3.5.0              -       100     0       i Or-ID: 10.3.4.1 C-LST: 10.2.4.0 
+ * >Ec    RD: 10.3.5.0:10030 imet 10.3.5.0
+                                 10.3.5.0              -       100     0       i Or-ID: 10.3.4.0 C-LST: 10.2.0.0 
+ *  ec    RD: 10.3.5.0:10030 imet 10.3.5.0
+                                 10.3.5.0              -       100     0       i Or-ID: 10.3.4.1 C-LST: 10.2.4.0 
+
+```
+
+##### Таблица маршрутизации Underlay на примере Spine_0
+```
+Spine_0#show bgp evpn 
+BGP routing table information for VRF default
+Router identifier 10.2.0.0, local AS number 64512
+Route status codes: * - valid, > - active, S - Stale, E - ECMP head, e - ECMP
+                    c - Contributing to ECMP, % - Pending BGP convergence
+Origin codes: i - IGP, e - EGP, ? - incomplete
+AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
+
+          Network                Next Hop              Metric  LocPref Weight  Path
+ * >      RD: 10.2.1.0:10010 mac-ip 0000.5e00.010a
+                                 -                     -       -       0       i
+ * >      RD: 10.2.1.0:10020 mac-ip 0000.5e00.0114
+                                 -                     -       -       0       i
+ * >      RD: 10.2.1.0:10030 mac-ip 0000.5e00.011e
+                                 -                     -       -       0       i
+ * >Ec    RD: 10.3.1.0:10010 mac-ip 5000.0072.8b31
+                                 10.3.1.0              -       100     0       i
+ *  ec    RD: 10.3.1.0:10010 mac-ip 5000.0072.8b31
+                                 10.3.1.0              -       100     0       i
+ * >      RD: 10.3.1.0:10020 mac-ip 5000.0072.8b31
+                                 10.3.1.0              -       100     0       i
+ * >      RD: 10.3.5.0:10010 mac-ip 5000.00af.d3f6
+                                 10.3.5.0              -       100     0       i
+ * >      RD: 10.3.5.0:10020 mac-ip 5000.00af.d3f6
+                                 10.3.5.0              -       100     0       i
+ * >      RD: 10.3.5.0:10030 mac-ip 5000.00af.d3f6
+                                 10.3.5.0              -       100     0       i
+ * >      RD: 10.2.1.0:10010 mac-ip 5000.00f6.ad37
+                                 -                     -       -       0       i
+ * >      RD: 10.2.1.0:10010 imet 10.2.1.0
+                                 -                     -       -       0       i
+ * >      RD: 10.2.1.0:10020 imet 10.2.1.0
+                                 -                     -       -       0       i
+ * >      RD: 10.2.1.0:10030 imet 10.2.1.0
+                                 -                     -       -       0       i
+ * >Ec    RD: 10.3.1.0:10010 imet 10.3.1.0
+                                 10.3.1.0              -       100     0       i
+ *  ec    RD: 10.3.1.0:10010 imet 10.3.1.0
+                                 10.3.1.0              -       100     0       i
+ * >Ec    RD: 10.3.1.0:10020 imet 10.3.1.0
+                                 10.3.1.0              -       100     0       i
+ *  ec    RD: 10.3.1.0:10020 imet 10.3.1.0
+                                 10.3.1.0              -       100     0       i
+ * >Ec    RD: 10.3.1.0:10030 imet 10.3.1.0
+                                 10.3.1.0              -       100     0       i
+ *  ec    RD: 10.3.1.0:10030 imet 10.3.1.0
+                                 10.3.1.0              -       100     0       i
+ * >Ec    RD: 10.3.5.0:10010 imet 10.3.5.0
+                                 10.3.5.0              -       100     0       i
+ *  ec    RD: 10.3.5.0:10010 imet 10.3.5.0
+                                 10.3.5.0              -       100     0       i
+ * >Ec    RD: 10.3.5.0:10020 imet 10.3.5.0
+                                 10.3.5.0              -       100     0       i
+ *  ec    RD: 10.3.5.0:10020 imet 10.3.5.0
+                                 10.3.5.0              -       100     0       i
+ * >Ec    RD: 10.3.5.0:10030 imet 10.3.5.0
+                                 10.3.5.0              -       100     0       i
+ *  ec    RD: 10.3.5.0:10030 imet 10.3.5.0
+                                 10.3.5.0              -       100     0       i
+```
+
+##### Состояние VxLAN туннеля на примере Leaf_00
+```
+Leaf-00#show mac address-table 
+          Mac Address Table
+------------------------------------------------------------------
+
+Vlan    Mac Address       Type        Ports      Moves   Last Move
+----    -----------       ----        -----      -----   ---------
+  10    0000.5e00.010a    DYNAMIC     Vx1        1       19:56:39 ago
+  10    5000.0072.8b31    DYNAMIC     Po1        1       0:01:51 ago
+  10    5000.00af.d3f6    DYNAMIC     Vx1        1       19:56:39 ago
+  10    5000.00f6.ad37    DYNAMIC     Vx1        1       0:01:48 ago
+  20    0000.5e00.0114    DYNAMIC     Vx1        42      16:31:01 ago
+  30    0000.5e00.011e    DYNAMIC     Vx1        17      16:30:57 ago
+4093    0000.8000.0000    STATIC      Cpu
+4093    5000.0003.3766    STATIC      Po3
+4094    0000.8000.0000    STATIC      Cpu
+Total Mac Addresses for this criterion: 9
+
+          Multicast Mac Address Table
+------------------------------------------------------------------
+
+Vlan    Mac Address       Type        Ports
+----    -----------       ----        -----
+Total Mac Addresses for this criterion: 0
+
+
+Leaf-00#show interfaces vxlan1
+Vxlan1 is up, line protocol is up (connected)
+  Hardware is Vxlan
+  Source interface is Loopback100 and is active with 10.3.1.0
+  Listening on UDP port 4789
+  Replication/Flood Mode is headend with Flood List Source: EVPN
+  Remote MAC learning via EVPN
+  VNI mapping to VLANs
+  Static VLAN to VNI mapping is 
+    [10, 10010]       [20, 10020]       [30, 10030]      
+  Note: All Dynamic VLANs used by VCS are internal VLANs.
+        Use 'show vxlan vni' for details.
+  Static VRF to VNI mapping is not configured
+  Headend replication flood vtep list is:
+    10 10.2.5.0        10.2.1.0        10.3.5.0       
+    20 10.2.5.0        10.2.1.0       
+    30 10.2.5.0        10.2.1.0       
+  MLAG Shared Router MAC is 0000.0000.0000
+
+  
+Leaf-00#show vxlan address-table 
+          Vxlan Mac Address Table
+----------------------------------------------------------------------
+
+VLAN  Mac Address     Type      Prt  VTEP             Moves   Last Move
+----  -----------     ----      ---  ----             -----   ---------
+  10  0000.5e00.010a  EVPN      Vx1  10.2.1.0         1       19:58:26 ago
+  10  5000.00af.d3f6  EVPN      Vx1  10.3.5.0         1       19:58:26 ago
+  10  5000.00f6.ad37  EVPN      Vx1  10.2.1.0         1       0:03:35 ago
+  20  0000.5e00.0114  EVPN      Vx1  10.2.1.0         42      16:32:48 ago
+  30  0000.5e00.011e  EVPN      Vx1  10.2.1.0         17      16:32:44 ago
+Total Remote Mac Addresses for this criterion: 5
+Leaf-00#
+
+```
