@@ -254,3 +254,66 @@ interface Port-Channel3
    switchport trunk group mlag-peer
 ```
 
+### Результаты
+##### Состояние BGP Overlay на Spine
+```
+Spine_0#show bgp evpn summary 
+BGP summary information for VRF default
+Router identifier 10.2.0.0, local AS number 64512
+Neighbor Status Codes: m - Under maintenance
+  Description              Neighbor V AS           MsgRcvd   MsgSent  InQ OutQ  Up/Down State   PfxRcd PfxAcc
+  Over_Leaf-00             10.3.0.0 4 64512           5006      5935    0    0    2d19h Estab   5      5
+  Over_Leaf-01             10.3.0.1 4 64512           3318      3702    0    0 00:25:42 Estab   4      4
+  Over_Leaf-10             10.3.4.0 4 64512           3056      3436    0    0 18:44:15 Estab   4      4
+  Over_Leaf-11             10.3.4.1 4 64512           3254      3682    0    0 18:44:12 Estab   5      5
+
+
+Spine_1#show bgp evpn summary 
+BGP summary information for VRF default
+Router identifier 10.2.4.0, local AS number 64512
+Neighbor Status Codes: m - Under maintenance
+  Description              Neighbor V AS           MsgRcvd   MsgSent  InQ OutQ  Up/Down State   PfxRcd PfxAcc
+  Over_Leaf-00             10.3.0.0 4 64512           4928      5845    0    0    2d18h Estab   5      5
+  Over_Leaf-01             10.3.0.1 4 64512           3246      3622    0    0 00:27:25 Estab   4      4
+  Over_Leaf-10             10.3.4.0 4 64512           3065      3444    0    0 18:45:33 Estab   4      4
+  Over_Leaf-11             10.3.4.1 4 64512           3241      3675    0    0 18:45:35 Estab   5      5
+```
+
+##### Состояние BGP Overlay на Leaf. Стойка 1
+````
+BGP summary information for VRF default
+Router identifier 10.3.0.0, local AS number 64512
+Neighbor Status Codes: m - Under maintenance
+  Description              Neighbor V AS           MsgRcvd   MsgSent  InQ OutQ  Up/Down State   PfxRcd PfxAcc
+  Over_Spine_0             10.2.0.0 4 64512           5938      5009    0    0    2d19h Estab   12     12
+  Over_Spine_1             10.2.4.0 4 64512           5934      5015    0    0    2d18h Estab   12     12
+
+
+Leaf-01#show bgp evpn summary
+BGP summary information for VRF default
+Router identifier 10.3.0.1, local AS number 64512
+Neighbor Status Codes: m - Under maintenance
+  Description              Neighbor V AS           MsgRcvd   MsgSent  InQ OutQ  Up/Down State   PfxRcd PfxAcc
+  Over_Spine_0             10.2.0.0 4 64512           3693      3326    0    0 00:29:12 Estab   17     17
+  Over_Spine_1             10.2.4.0 4 64512           3688      3326    0    0 00:29:11 Estab   17     17
+````
+##### Состояние BGP Overlay на Leaf. Стойка 2
+```
+Leaf-10#show bgp evpn summary 
+BGP summary information for VRF default
+Router identifier 10.3.4.0, local AS number 64512
+Neighbor Status Codes: m - Under maintenance
+  Description              Neighbor V AS           MsgRcvd   MsgSent  InQ OutQ  Up/Down State   PfxRcd PfxAcc
+  Over_Spine_0             10.2.0.0 4 64512           3436      3067    0    0 18:48:28 Estab   13     13
+  Over_Spine_1             10.2.4.0 4 64512           3442      3074    0    0 18:48:03 Estab   16     16
+
+
+Leaf-11#show bgp evpn summary 
+BGP summary information for VRF default
+Router identifier 10.3.4.1, local AS number 64512
+Neighbor Status Codes: m - Under maintenance
+  Description              Neighbor V AS           MsgRcvd   MsgSent  InQ OutQ  Up/Down State   PfxRcd PfxAcc
+  Over_Spine_0             10.2.0.0 4 64512           3659      3248    0    0 18:49:02 Estab   15     15
+  Over_Spine_1             10.2.4.0 4 64512           3649      3235    0    0 18:48:40 Estab   12     12
+
+```
